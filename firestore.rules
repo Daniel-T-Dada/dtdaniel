@@ -1,0 +1,28 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow read access to all collections
+    match /projects/{document=**} {
+      allow read: if true;
+      allow write: if false; // Only allow writes through admin
+    }
+    
+    match /skills/{document=**} {
+      allow read: if true;
+      allow write: if false; // Only allow writes through admin
+    }
+    
+    match /about/{document=**} {
+      allow read: if true;
+      allow write: if false; // Only allow writes through admin
+    }
+    
+    // Allow write access to messages collection for contact form
+    match /messages/{document=**} {
+      allow read: if false; // Only allow reads through admin
+      allow create: if true; // Allow users to submit contact messages
+      allow update, delete: if false;
+    }
+  }
+} 
