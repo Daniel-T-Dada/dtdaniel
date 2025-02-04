@@ -1,0 +1,16 @@
+[debug] [2025-02-04T19:22:34.321Z] ----------------------------------------------------------------------
+[debug] [2025-02-04T19:22:34.324Z] Command:       C:\nvm4w\nodejs\node.exe C:\nvm4w\nodejs\node_modules\firebase-tools\lib\bin\firebase.js deploy
+[debug] [2025-02-04T19:22:34.325Z] CLI Version:   13.29.3
+[debug] [2025-02-04T19:22:34.325Z] Platform:      win32
+[debug] [2025-02-04T19:22:34.325Z] Node Version:  v23.5.0
+[debug] [2025-02-04T19:22:34.325Z] Time:          Tue Feb 04 2025 20:22:34 GMT+0100 (West Africa Standard Time)
+[debug] [2025-02-04T19:22:34.325Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2025-02-04T19:22:34.534Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-02-04T19:22:34.534Z] > authorizing via signed-in user (simplytobs@gmail.com)
+[debug] [2025-02-04T19:22:34.534Z] [iam] checking project dtdaniel-20897 for permissions ["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get","firebasehosting.sites.update"]
+[debug] [2025-02-04T19:22:34.535Z] Checked if tokens are valid: true, expires at: 1738699232218
+[debug] [2025-02-04T19:22:34.536Z] Checked if tokens are valid: true, expires at: 1738699232218
+[debug] [2025-02-04T19:22:34.536Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/dtdaniel-20897:testIamPermissions [none]
+[debug] [2025-02-04T19:22:34.537Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/dtdaniel-20897:testIamPermissions x-goog-quota-user=projects/dtdaniel-20897
+[debug] [2025-02-04T19:22:34.537Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/dtdaniel-20897:testIamPermissions {"permissions":["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get","firebasehosting.sites.update"]}
