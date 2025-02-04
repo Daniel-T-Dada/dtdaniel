@@ -8,13 +8,11 @@ export async function POST(request) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
+                'Authorization': `Bearer ${idToken}`
             },
             body: new URLSearchParams({
                 grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
-                assertion: idToken,
-                client_id: process.env.NEXT_PUBLIC_OAUTH_CLIENT_ID,
-                client_secret: process.env.OAUTH_CLIENT_SECRET,
-                scope: 'https://www.googleapis.com/auth/firebase.messaging'
+                assertion: idToken
             })
         });
 
