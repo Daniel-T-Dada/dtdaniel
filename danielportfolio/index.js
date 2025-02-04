@@ -8,6 +8,7 @@
  */
 
 const { onRequest } = require("firebase-functions/v2/https");
+const { onCall } = require("firebase-functions/v2/https");
 const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
 
@@ -85,5 +86,49 @@ exports.submitContactForm = onRequest(async (request, response) => {
             success: false,
             error: error.message
         });
+    }
+});
+
+// Function to update FCM token
+exports.updateFCMToken = onCall(async (data, context) => {
+    // Verify authentication
+    if (!context.auth) {
+        throw new Error("Unauthorized");
+    }
+
+    const { token, action, accessToken } = data;
+    const userId = context.auth.uid;
+
+    try {
+        // Verify the OAuth token
+        const response = await fetch(`https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=${accessToken}`);
+        if (!response.ok) {
+            throw new Error("Invalid OAuth token");
+        }
+
+        const userRef = admin.firestore().collection("adminUsers").doc(userId);
+
+        if (action === "add") {
+            // Add the token to the user's tokens array
+            await userRef.set({
+                fcmTokens: admin.firestore.FieldValue.arrayUnion(token)
+            }, { merge: true });
+
+            logger.info(`FCM token added for user ${userId}`);
+            return { success: true, message: "Token added successfully" };
+        } else if (action === "remove") {
+            // Remove the token from the user's tokens array
+            await userRef.update({
+                fcmTokens: admin.firestore.FieldValue.arrayRemove(token)
+            });
+
+            logger.info(`FCM token removed for user ${userId}`);
+            return { success: true, message: "Token removed successfully" };
+        }
+
+        throw new Error("Invalid action");
+    } catch (error) {
+        logger.error("Error updating FCM token:", error);
+        throw new Error("Failed to update FCM token");
     }
 });

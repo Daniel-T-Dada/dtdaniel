@@ -21,9 +21,32 @@ export default function NotificationManager() {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
             setUser(user);
             if (user) {
-                // Get the ID token with FCM scope
-                const token = await user.getIdToken(true);
-                setupPushNotifications(token);
+                try {
+                    // Get the ID token with FCM scope
+                    const idToken = await user.getIdToken(true);
+                    // Add FCM scope to the ID token
+                    const response = await fetch('https://oauth2.googleapis.com/token', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: new URLSearchParams({
+                            grant_type: 'refresh_token',
+                            client_id: process.env.NEXT_PUBLIC_OAUTH_CLIENT_ID,
+                            refresh_token: idToken,
+                            scope: 'https://www.googleapis.com/auth/firebase.messaging'
+                        })
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        setupPushNotifications(data.access_token);
+                    } else {
+                        console.error('Failed to get OAuth token:', await response.text());
+                    }
+                } catch (error) {
+                    console.error('Error getting OAuth token:', error);
+                }
             }
         });
 
@@ -46,7 +69,7 @@ export default function NotificationManager() {
         }
     };
 
-    const setupPushNotifications = async (idToken) => {
+    const setupPushNotifications = async (accessToken) => {
         try {
             // Check if Firebase Messaging is supported
             const isMessagingSupported = await isSupported();
@@ -75,7 +98,11 @@ export default function NotificationManager() {
                     if (token) {
                         console.log('FCM Token:', token);
                         // Register token with your server
-                        await updateFCMToken({ token, action: "add" });
+                        await updateFCMToken({
+                            token,
+                            action: "add",
+                            accessToken // Include the OAuth access token
+                        });
 
                         // Handle token refresh
                         messaging.onTokenRefresh(async () => {
@@ -84,7 +111,11 @@ export default function NotificationManager() {
                                     vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
                                     serviceWorkerRegistration: swRegistration
                                 });
-                                await updateFCMToken({ token: newToken, action: "add" });
+                                await updateFCMToken({
+                                    token: newToken,
+                                    action: "add",
+                                    accessToken
+                                });
                             } catch (refreshError) {
                                 console.error("Error refreshing FCM token:", refreshError);
                             }
