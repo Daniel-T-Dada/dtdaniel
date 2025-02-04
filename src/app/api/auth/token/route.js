@@ -10,11 +10,11 @@ export async function POST(request) {
                 'Content-Type': 'application/x-www-form-urlencoded',
             },
             body: new URLSearchParams({
-                grant_type: 'authorization_code',
+                grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+                assertion: idToken,
                 client_id: process.env.NEXT_PUBLIC_OAUTH_CLIENT_ID,
                 client_secret: process.env.OAUTH_CLIENT_SECRET,
-                code: idToken,
-                redirect_uri: `${process.env.NEXT_PUBLIC_BASE_URL}/__/auth/handler`
+                scope: 'https://www.googleapis.com/auth/firebase.messaging'
             })
         });
 
