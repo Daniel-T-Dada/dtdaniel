@@ -10,6 +10,7 @@ import {
 import { getFunctions, httpsCallable } from "firebase/functions";
 import { app } from "@/firebase/config";
 import { toast } from "react-hot-toast";
+import Image from "next/image";
 
 export default function NotificationManager() {
     useEffect(() => {
@@ -68,7 +69,7 @@ export default function NotificationManager() {
                                             <div className="flex-1 w-0 p-4">
                                                 <div className="flex items-start">
                                                     <div className="flex-shrink-0">
-                                                        <img
+                                                        <Image
                                                             className="h-10 w-10 rounded-full"
                                                             src="/icon-192x192.png"
                                                             alt=""
