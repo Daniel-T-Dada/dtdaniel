@@ -1,6 +1,7 @@
 import { Inter } from "next/font/google";
-import { ThemeProvider } from "@/components/Providers";
 import "./globals.css";
+import Script from "next/script";
+import RootLayoutWrapper from "@/components/RootLayoutWrapper";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -14,23 +15,17 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                document.documentElement.classList.add('dark')
-              } else {
-                document.documentElement.classList.remove('dark')
-              }
-            `,
-          }}
-        />
+        <Script id="theme-script" strategy="beforeInteractive">
+          {`
+            try {
+              let isDark = localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches);
+              document.documentElement.classList.toggle('dark', isDark);
+            } catch (e) {}
+          `}
+        </Script>
       </head>
-      <body
-        className={`${inter.className} bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100`}
-        suppressHydrationWarning
-      >
-        <ThemeProvider>{children}</ThemeProvider>
+      <body className={inter.className} suppressHydrationWarning>
+        <RootLayoutWrapper>{children}</RootLayoutWrapper>
       </body>
     </html>
   );
