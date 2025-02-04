@@ -30,6 +30,22 @@ export default function NotificationManager() {
         return () => unsubscribe();
     }, []);
 
+    const registerServiceWorker = async () => {
+        try {
+            if ('serviceWorker' in navigator) {
+                const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+                    scope: '/'
+                });
+                console.log('Service Worker registered with scope:', registration.scope);
+                return registration;
+            }
+            throw new Error('Service Worker not supported');
+        } catch (error) {
+            console.error('Service Worker registration failed:', error);
+            throw error;
+        }
+    };
+
     const setupPushNotifications = async (idToken) => {
         try {
             // Check if Firebase Messaging is supported
@@ -38,6 +54,9 @@ export default function NotificationManager() {
                 console.log("Firebase Messaging is not supported in this environment");
                 return;
             }
+
+            // Register service worker first
+            const swRegistration = await registerServiceWorker();
 
             const messaging = getMessaging(app);
             const functions = getFunctions(app);
@@ -50,17 +69,21 @@ export default function NotificationManager() {
                     // Get new token with authentication
                     const token = await getToken(messaging, {
                         vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
-                        serviceWorkerRegistration: await navigator.serviceWorker.register('/firebase-messaging-sw.js')
+                        serviceWorkerRegistration: swRegistration
                     });
 
                     if (token) {
+                        console.log('FCM Token:', token);
                         // Register token with your server
                         await updateFCMToken({ token, action: "add" });
 
                         // Handle token refresh
                         messaging.onTokenRefresh(async () => {
                             try {
-                                const newToken = await getToken(messaging);
+                                const newToken = await getToken(messaging, {
+                                    vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
+                                    serviceWorkerRegistration: swRegistration
+                                });
                                 await updateFCMToken({ token: newToken, action: "add" });
                             } catch (refreshError) {
                                 console.error("Error refreshing FCM token:", refreshError);
@@ -69,6 +92,7 @@ export default function NotificationManager() {
 
                         // Handle foreground messages
                         onMessage(messaging, (payload) => {
+                            console.log('Received foreground message:', payload);
                             // Play notification sound
                             const audio = new Audio("/notification-sound.mp3");
                             audio.play().catch((e) => console.log("Audio playback failed:", e));
