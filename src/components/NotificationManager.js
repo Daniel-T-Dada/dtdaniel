@@ -18,17 +18,19 @@ export default function NotificationManager() {
 
     useEffect(() => {
         const auth = getAuth(app);
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
+        const unsubscribe = onAuthStateChanged(auth, async (user) => {
             setUser(user);
             if (user) {
-                setupPushNotifications();
+                // Get the ID token with FCM scope
+                const token = await user.getIdToken(true);
+                setupPushNotifications(token);
             }
         });
 
         return () => unsubscribe();
     }, []);
 
-    const setupPushNotifications = async () => {
+    const setupPushNotifications = async (idToken) => {
         try {
             // Check if Firebase Messaging is supported
             const isMessagingSupported = await isSupported();
@@ -41,21 +43,14 @@ export default function NotificationManager() {
             const functions = getFunctions(app);
             const updateFCMToken = httpsCallable(functions, "updateFCMToken");
 
-            // Get the current user's ID token
-            const auth = getAuth(app);
-            const currentUser = auth.currentUser;
-            if (!currentUser) {
-                console.log("No authenticated user");
-                return;
-            }
-
             // Request permission and get token
             const permission = await Notification.requestPermission();
             if (permission === "granted") {
                 try {
-                    // Get new token
+                    // Get new token with authentication
                     const token = await getToken(messaging, {
                         vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
+                        serviceWorkerRegistration: await navigator.serviceWorker.register('/firebase-messaging-sw.js')
                     });
 
                     if (token) {
