@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
     getMessaging,
     getToken,
@@ -16,42 +16,61 @@ import Image from "next/image";
 export default function NotificationManager() {
     const [user, setUser] = useState(null);
 
+    const setupPushNotifications = useCallback(async () => {
+        try {
+            // Get the current user's ID token
+            const auth = getAuth(app);
+            const user = auth.currentUser;
+            if (!user) {
+                throw new Error("User not authenticated");
+            }
+            const idToken = await user.getIdToken();
+
+            // Exchange ID token for OAuth token
+            const tokenResponse = await fetch('/api/auth/token', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    idToken,
+                })
+            });
+
+            if (!tokenResponse.ok) {
+                const errorData = await tokenResponse.json();
+                throw new Error(`Failed to get OAuth token: ${JSON.stringify(errorData)}`);
+            }
+
+            const { access_token } = await tokenResponse.json();
+
+            // Rest of your existing push notification setup code...
+            const registration = await registerServiceWorker();
+            const messaging = getMessaging(app);
+            const fcmToken = await getToken(messaging, {
+                vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
+                serviceWorkerRegistration: registration,
+            });
+
+            // Update FCM token with the access token
+            await updateToken(fcmToken, access_token);
+        } catch (error) {
+            console.error('Error setting up push notifications:', error);
+            toast.error('Failed to set up notifications');
+        }
+    }, []);
+
     useEffect(() => {
         const auth = getAuth(app);
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
             setUser(user);
             if (user) {
-                try {
-                    // Get the ID token with FCM scope
-                    const idToken = await user.getIdToken(true);
-                    // Add FCM scope to the ID token
-                    const response = await fetch('https://oauth2.googleapis.com/token', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded',
-                        },
-                        body: new URLSearchParams({
-                            grant_type: 'refresh_token',
-                            client_id: process.env.NEXT_PUBLIC_OAUTH_CLIENT_ID,
-                            refresh_token: idToken,
-                            scope: 'https://www.googleapis.com/auth/firebase.messaging'
-                        })
-                    });
-
-                    if (response.ok) {
-                        const data = await response.json();
-                        setupPushNotifications(data.access_token);
-                    } else {
-                        console.error('Failed to get OAuth token:', await response.text());
-                    }
-                } catch (error) {
-                    console.error('Error getting OAuth token:', error);
-                }
+                await setupPushNotifications();
             }
         });
 
         return () => unsubscribe();
-    }, []);
+    }, [setupPushNotifications]);
 
     const registerServiceWorker = async () => {
         try {
@@ -66,120 +85,6 @@ export default function NotificationManager() {
         } catch (error) {
             console.error('Service Worker registration failed:', error);
             throw error;
-        }
-    };
-
-    const setupPushNotifications = async (accessToken) => {
-        try {
-            // Check if Firebase Messaging is supported
-            const isMessagingSupported = await isSupported();
-            if (!isMessagingSupported) {
-                console.log("Firebase Messaging is not supported in this environment");
-                return;
-            }
-
-            // Register service worker first
-            const swRegistration = await registerServiceWorker();
-
-            const messaging = getMessaging(app);
-            const functions = getFunctions(app);
-            const updateFCMToken = httpsCallable(functions, "updateFCMToken");
-
-            // Request permission and get token
-            const permission = await Notification.requestPermission();
-            if (permission === "granted") {
-                try {
-                    // Get new token with authentication
-                    const token = await getToken(messaging, {
-                        vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
-                        serviceWorkerRegistration: swRegistration
-                    });
-
-                    if (token) {
-                        console.log('FCM Token:', token);
-                        // Register token with your server
-                        await updateFCMToken({
-                            token,
-                            action: "add",
-                            accessToken // Include the OAuth access token
-                        });
-
-                        // Handle token refresh
-                        messaging.onTokenRefresh(async () => {
-                            try {
-                                const newToken = await getToken(messaging, {
-                                    vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
-                                    serviceWorkerRegistration: swRegistration
-                                });
-                                await updateFCMToken({
-                                    token: newToken,
-                                    action: "add",
-                                    accessToken
-                                });
-                            } catch (refreshError) {
-                                console.error("Error refreshing FCM token:", refreshError);
-                            }
-                        });
-
-                        // Handle foreground messages
-                        onMessage(messaging, (payload) => {
-                            console.log('Received foreground message:', payload);
-                            // Play notification sound
-                            const audio = new Audio("/notification-sound.mp3");
-                            audio.play().catch((e) => console.log("Audio playback failed:", e));
-
-                            toast.custom(
-                                (t) => (
-                                    <div
-                                        className={`${t.visible ? "animate-enter" : "animate-leave"
-                                            } max-w-md w-full bg-white dark:bg-gray-800 shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-black ring-opacity-5`}
-                                    >
-                                        <div className="flex-1 w-0 p-4">
-                                            <div className="flex items-start">
-                                                <div className="flex-shrink-0">
-                                                    <Image
-                                                        className="h-10 w-10 rounded-full"
-                                                        src="/icon-192x192.png"
-                                                        alt=""
-                                                        width={40}
-                                                        height={40}
-                                                    />
-                                                </div>
-                                                <div className="ml-3 flex-1">
-                                                    <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                                        {payload.notification.title}
-                                                    </p>
-                                                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                                                        {payload.notification.body}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="flex border-l border-gray-200 dark:border-gray-700">
-                                            <button
-                                                onClick={() => {
-                                                    window.location.href = payload.fcmOptions?.link || "/admin";
-                                                    toast.dismiss(t.id);
-                                                }}
-                                                className="w-full border border-transparent rounded-none rounded-r-lg p-4 flex items-center justify-center text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                            >
-                                                View
-                                            </button>
-                                        </div>
-                                    </div>
-                                ),
-                                {
-                                    duration: 5000,
-                                }
-                            );
-                        });
-                    }
-                } catch (tokenError) {
-                    console.error("Error getting FCM token:", tokenError);
-                }
-            }
-        } catch (error) {
-            console.error("Error setting up push notifications:", error);
         }
     };
 
