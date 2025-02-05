@@ -22,16 +22,12 @@ export async function getProjects() {
         const querySnapshot = await getDocs(q);
         return querySnapshot.docs.map((doc) => {
             const data = doc.data();
-            // Mark specific projects as private
-            if (
-                data.title === "GidiGo" ||
-                data.title === "GidiGo Travel Platform" ||
-                data.title === "Chronicle Blog"
-            ) {
+            // If project is marked as private, override the GitHub URL
+            if (data.isPrivate) {
                 return {
                     id: doc.id,
                     ...data,
-                    githubUrl: "private", // Override the GitHub URL
+                    githubUrl: "private", // Override the GitHub URL for private projects
                 };
             }
             return {
@@ -56,6 +52,20 @@ export async function addProject(projectData) {
         return docRef.id;
     } catch (error) {
         console.error("Error adding project:", error);
+        throw error;
+    }
+}
+
+export async function updateProject(projectId, projectData) {
+    try {
+        const projectRef = doc(db, "projects", projectId);
+        await updateDoc(projectRef, {
+            ...projectData,
+            updatedAt: new Date(),
+        });
+        return true;
+    } catch (error) {
+        console.error("Error updating project:", error);
         throw error;
     }
 }
@@ -167,17 +177,12 @@ export async function getDocumentById(collectionName, docId) {
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
             const data = docSnap.data();
-            // Mark specific projects as private
-            if (
-                collectionName === "projects" &&
-                (data.title === "GidiGo" ||
-                    data.title === "GidiGo Travel Platform" ||
-                    data.title === "Chronicle Blog")
-            ) {
+            // If project is marked as private, override the GitHub URL
+            if (collectionName === "projects" && data.isPrivate) {
                 return {
                     id: docSnap.id,
                     ...data,
-                    githubUrl: "private", // Override the GitHub URL
+                    githubUrl: "private", // Override the GitHub URL for private projects
                 };
             }
             return {
@@ -215,6 +220,88 @@ export const updateMessageStatus = async (messageId, status) => {
     } catch (error) {
         console.error("Error updating message status:", error);
         return { success: false, error: error.message };
+    }
+};
+
+// Reply to message
+export const addMessageReply = async (messageId, replyData) => {
+    try {
+        // Validate input data
+        if (!messageId || !replyData || !replyData.content || !replyData.adminEmail) {
+            throw new Error("Missing required data for reply");
+        }
+
+        const messageRef = doc(db, "messages", messageId);
+        const messageDoc = await getDoc(messageRef);
+
+        if (!messageDoc.exists()) {
+            throw new Error("Message not found");
+        }
+
+        // Get existing replies or initialize empty array
+        const currentData = messageDoc.data();
+        const replies = Array.isArray(currentData.replies) ? currentData.replies : [];
+
+        // Create new reply object with all required fields
+        const newReply = {
+            content: replyData.content.trim(),
+            timestamp: new Date().toISOString(), // Store as ISO string for consistency
+            adminEmail: replyData.adminEmail,
+        };
+
+        // Create update object with all fields explicitly defined
+        const updateData = {
+            replies: [...replies, newReply],
+            status: "replied",
+            lastUpdated: serverTimestamp(),
+        };
+
+        // Update document with validated data
+        await updateDoc(messageRef, updateData);
+
+        // Send email notification of reply
+        try {
+            const response = await fetch("/api/reply-notify", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    messageId,
+                    reply: replyData.content,
+                    recipientEmail: currentData.email,
+                    recipientName: currentData.name,
+                }),
+            });
+
+            if (!response.ok) {
+                console.error("Failed to send reply notification email");
+            }
+        } catch (error) {
+            console.error("Error sending reply notification:", error);
+        }
+
+        return { success: true };
+    } catch (error) {
+        console.error("Error adding reply:", error);
+        return { success: false, error: error.message };
+    }
+};
+
+// Get message replies
+export const getMessageReplies = async (messageId) => {
+    try {
+        const messageRef = doc(db, "messages", messageId);
+        const messageDoc = await getDoc(messageRef);
+
+        if (!messageDoc.exists()) {
+            throw new Error("Message not found");
+        }
+
+        return messageDoc.data().replies || [];
+    } catch (error) {
+        console.error("Error getting replies:", error);
+        return [];
     }
 };
 

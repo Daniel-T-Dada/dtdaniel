@@ -9,67 +9,6 @@ import {
   getSkills,
 } from "@/lib/firebaseHelpers";
 
-// Real project data
-const projectsData = [
-  {
-    title: "Oja E-commerce Platform",
-    description:
-      "A modern e-commerce platform built with Django, featuring PayPal integration, cart functionality, and a responsive design. Includes product catalog, secure payments, and order management.",
-    technologies: [
-      "Django",
-      "PostgreSQL",
-      "PayPal API",
-      "Bootstrap",
-      "WhiteNoise",
-    ],
-    imageUrl: "/projects/oja.png",
-    githubUrl: "https://github.com/Daniel-T-Dada/oja.git",
-    liveUrl: "https://oja.org.ng/",
-    order: 1,
-  },
-  {
-    title: "Korean Movie App",
-    description:
-      "A Next.js-based movie application showcasing Korean films with features like movie filtering, rating system, and a wishlist feature. Includes a responsive design and smooth animations.",
-    technologies: [
-      "Next.js",
-      "Tailwind CSS",
-      "Swiper.js",
-      "Material UI",
-      "React Icons",
-    ],
-    imageUrl: "/projects/movie-app.png",
-    githubUrl: "https://github.com/Daniel-T-Dada/Movie-App.git",
-    liveUrl: "https://movie-app-lovat-kappa.vercel.app/",
-    order: 2,
-  },
-  {
-    title: "GidiGo Travel Platform",
-    description:
-      "A travel and tourism platform for exploring destinations, booking trips, and sharing travel experiences. Features an interactive map interface and user reviews system.",
-    technologies: ["React", "Node.js", "MongoDB", "Express", "Google Maps API"],
-    imageUrl: "/projects/gidigo.png",
-    githubUrl: "private",
-    liveUrl: "https://gidigo.vercel.app/",
-    order: 3,
-  },
-  {
-    title: "Chronicle Blog",
-    description:
-      "A modern blogging platform with rich text editing, comment system, and social sharing features. Supports markdown formatting and image uploads.",
-    technologies: [
-      "Next.js",
-      "Firebase",
-      "Tailwind CSS",
-      "Draft.js",
-      "Cloud Storage",
-    ],
-    imageUrl: "/projects/chronicle.png",
-    githubUrl: "private",
-    liveUrl: "https://chronicle-blog.vercel.app/",
-    order: 4,
-  },
-];
 
 // Updated skills based on your projects
 const skillsData = [

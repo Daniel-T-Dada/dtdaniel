@@ -26,23 +26,24 @@ exports.sendContactNotification = functions.firestore
             const emailPromise = transporter.sendMail({
                 from: functions.config().gmail.email,
                 to: functions.config().admin.email,
-                subject: `New Contact Form Message from ${message.name}`,
+                subject: `🔔 New Contact Message: ${message.name} - ${message.subject}`,
                 html: `
-            <h2 style="color: #4F46E5;">New Contact Form Submission</h2>
+            <h2 style="color: #4F46E5;">📨 New Contact Form Submission</h2>
             <div style="padding: 20px; border: 1px solid #E5E7EB; border-radius: 8px; margin: 20px 0;">
                 <p><strong>From:</strong> ${message.name}</p>
                 <p><strong>Email:</strong> ${message.email}</p>
+                <p><strong>Subject:</strong> ${message.subject}</p>
                 <p><strong>Message:</strong></p>
                 <div style="padding: 15px; background-color: #F9FAFB; border-radius: 6px; margin: 10px 0;">
                 ${message.message}
                 </div>
-                <p><strong>Submitted at:</strong> ${message.timestamp
-                            .toDate()
-                            .toLocaleString()}</p>
+                <p><strong>Submitted at:</strong> ${message.timestamp.toDate().toLocaleString()}</p>
                 <p><strong>Message ID:</strong> ${messageId}</p>
             </div>
             <p style="color: #6B7280; font-size: 0.875rem;">
                 This is an automated notification from your portfolio website.
+                <br>
+                View this message in your <a href="${functions.config().app.url}/admin" style="color: #4F46E5;">admin panel</a>.
             </p>
         `,
             });

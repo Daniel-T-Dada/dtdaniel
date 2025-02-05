@@ -309,85 +309,110 @@ export default function Home() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {projects.length > 0 ? (
-              projects.map((project, index) => (
-                <motion.div
-                  key={project.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
-                  viewport={{ once: true }}
-                  className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-shadow"
-                >
-                  {project.imageUrl && (
+              projects.map((project, index) => {
+                // Function to get image URL with fallback
+                const getImageUrl = () => {
+                  if (!project.imageUrl) {
+                    // Create SVG placeholder
+                    const svg = `
+                      <svg width="800" height="600" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="800" height="600" fill="#4F46E5"/>
+                        <text 
+                          x="400" 
+                          y="300" 
+                          font-family="Arial" 
+                          font-size="24" 
+                          fill="white" 
+                          text-anchor="middle" 
+                          dominant-baseline="middle"
+                        >
+                          ${project.title || 'Project'}
+                        </text>
+                      </svg>
+                    `;
+                    return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg.trim())}`;
+                  }
+                  return project.imageUrl;
+                };
+
+                return (
+                  <motion.div
+                    key={project.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: index * 0.1 }}
+                    viewport={{ once: true }}
+                    className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-shadow"
+                  >
                     <div className="relative h-48 w-full">
                       <Image
-                        src={project.imageUrl}
+                        src={getImageUrl()}
                         alt={project.title}
                         fill
                         className="object-cover"
                         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                       />
                     </div>
-                  )}
-                  <div className="p-6">
-                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                      {project.title}
-                    </h3>
-                    <p className="text-gray-600 dark:text-gray-300 mb-4">
-                      {project.description}
-                    </p>
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      {project.technologies?.map((tech) => (
-                        <span
-                          key={tech}
-                          className="px-3 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-full text-sm"
-                        >
-                          {tech}
-                        </span>
-                      ))}
-                    </div>
-                    <div className="flex justify-between">
-                      {project.githubUrl && project.githubUrl !== "private" ? (
-                        <a
-                          href={project.githubUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300"
-                        >
-                          GitHub →
-                        </a>
-                      ) : project.githubUrl === "private" ? (
-                        <span className="flex items-center text-gray-500 dark:text-gray-400 cursor-not-allowed">
-                          <svg
-                            className="w-4 h-4 mr-1"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
+                    <div className="p-6">
+                      <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                        {project.title}
+                      </h3>
+                      <p className="text-gray-600 dark:text-gray-300 mb-4">
+                        {project.description}
+                      </p>
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        {project.technologies?.map((tech) => (
+                          <span
+                            key={tech}
+                            className="px-3 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-full text-sm"
                           >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8V7a4 4 0 00-8 0v4h8z"
-                            />
-                          </svg>
-                          Private
-                        </span>
-                      ) : null}
-                      {project.liveUrl && (
-                        <a
-                          href={project.liveUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300"
-                        >
-                          Live Demo →
-                        </a>
-                      )}
+                            {tech}
+                          </span>
+                        ))}
+                      </div>
+                      <div className="flex justify-between">
+                        {project.githubUrl && project.githubUrl !== "private" ? (
+                          <a
+                            href={project.githubUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300"
+                          >
+                            GitHub →
+                          </a>
+                        ) : project.githubUrl === "private" ? (
+                          <span className="flex items-center text-gray-500 dark:text-gray-400 cursor-not-allowed">
+                            <svg
+                              className="w-4 h-4 mr-1"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8V7a4 4 0 00-8 0v4h8z"
+                              />
+                            </svg>
+                            Private
+                          </span>
+                        ) : null}
+                        {project.liveUrl && (
+                          <a
+                            href={project.liveUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300"
+                          >
+                            Live Demo →
+                          </a>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </motion.div>
-              ))
+                  </motion.div>
+                );
+              })
             ) : (
               <div className="col-span-full text-center text-gray-600 dark:text-gray-400">
                 Loading projects...

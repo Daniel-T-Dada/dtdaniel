@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import Navbar from "@/components/Navbar";
-import { toast } from "react-hot-toast";
+import { notify } from "@/utils/toast";
 import { addContactMessage } from "@/lib/firebaseHelpers";
 
 export default function Contact() {
@@ -32,14 +32,14 @@ export default function Contact() {
             const result = await addContactMessage(formData);
 
             if (result.success) {
-                toast.success("Message sent successfully!");
+                notify.success("Message sent successfully!");
                 setFormData({ name: "", email: "", subject: "", message: "" });
             } else {
                 throw new Error(result.error || "Failed to send message");
             }
         } catch (error) {
             console.error("Error sending message:", error);
-            toast.error("Failed to send message. Please try again.");
+            notify.error("Failed to send message. Please try again.");
         } finally {
             setIsSubmitting(false);
         }

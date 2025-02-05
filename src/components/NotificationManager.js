@@ -9,7 +9,7 @@ import {
 } from "firebase/messaging";
 import { getFunctions, httpsCallable } from "firebase/functions";
 import { app } from "@/firebase/config";
-import { toast } from "react-hot-toast";
+import { notify } from "@/utils/toast";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, doc, setDoc } from "firebase/firestore";
 
@@ -137,14 +137,12 @@ export default function NotificationManager() {
                 throw dbError;
             }
 
-            toast.success('Notifications set up successfully');
+            notify.success('Notifications set up successfully');
 
             // Handle foreground messages
             onMessage(messaging, (payload) => {
                 console.log('Received foreground message:', payload);
-                toast.success(payload.notification.title, {
-                    description: payload.notification.body
-                });
+                notify.success(payload.notification.title);
             });
 
         } catch (error) {
@@ -155,7 +153,7 @@ export default function NotificationManager() {
                 code: error.code,
                 details: error.details
             });
-            toast.error(error.message || 'Failed to set up notifications');
+            notify.error(error.message || 'Failed to set up notifications');
             throw error; // Re-throw to handle in the calling function
         }
     }, []);
