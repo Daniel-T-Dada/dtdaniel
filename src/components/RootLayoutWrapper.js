@@ -21,23 +21,19 @@ export default function RootLayoutWrapper({ children }) {
             position="bottom-right"
             toastOptions={{
               duration: 4000,
-              className: 'toast-message',
+              className: 'animate-slide-in',
               success: {
                 icon: '✓',
-                className: 'toast-success',
+                className: 'bg-green-600 text-white rounded-lg',
                 style: {
-                  background: '#059669',
-                  color: 'white',
                   borderRadius: '8px',
                 },
                 duration: 3000,
               },
               error: {
                 icon: '✕',
-                className: 'toast-error',
+                className: 'bg-red-600 text-white rounded-lg',
                 style: {
-                  background: '#DC2626',
-                  color: 'white',
                   borderRadius: '8px',
                 },
                 duration: 4000,
