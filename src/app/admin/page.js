@@ -8,10 +8,10 @@ import {
     onAuthStateChanged,
     sendPasswordResetEmail,
 } from "firebase/auth";
-import { collection, query, orderBy, getDocs } from "firebase/firestore";
+import { getFirestore, collection, query, orderBy, getDocs, onSnapshot } from "firebase/firestore";
 import { app } from "@/firebase/config";
 import { useRouter } from "next/navigation";
-import toast, { Toaster } from "react-hot-toast";
+import { toast } from "react-hot-toast";
 import { updateMessageStatus } from "@/lib/firebaseHelpers";
 import PasswordStrengthIndicator from "@/components/PasswordStrengthIndicator";
 import { motion, AnimatePresence } from "framer-motion";
@@ -48,12 +48,34 @@ export default function AdminPanel() {
     const [isResettingPassword, setIsResettingPassword] = useState(false);
     const router = useRouter();
 
+    const fetchMessages = useCallback(async () => {
+        try {
+            const db = getFirestore(app);
+            const messagesRef = collection(db, "messages");
+            const q = query(messagesRef, orderBy("timestamp", "desc"));
+            const querySnapshot = await getDocs(q);
+            const messagesList = querySnapshot.docs.map((doc) => ({
+                id: doc.id,
+                ...doc.data(),
+                timestamp: doc.data().timestamp?.toDate().toLocaleString() || "No date",
+            }));
+            setMessages(messagesList);
+            setUnreadCount(messagesList.filter((m) => m.status === "unread").length);
+        } catch (error) {
+            console.error("Error fetching messages:", error);
+            toast.error("Failed to fetch messages");
+        }
+    }, []);
+
     useEffect(() => {
         setMounted(true);
         const auth = getAuth(app);
         const unsubscribe = onAuthStateChanged(auth, (user) => {
             setUser(user);
             setLoading(false);
+            if (user) {
+                fetchMessages();
+            }
         });
 
         // Check for existing lockout
@@ -68,7 +90,31 @@ export default function AdminPanel() {
         }
 
         return () => unsubscribe();
-    }, []);
+    }, [fetchMessages]);
+
+    // Add real-time listener for messages
+    useEffect(() => {
+        if (user) {
+            const db = getFirestore(app);
+            const messagesRef = collection(db, "messages");
+            const q = query(messagesRef, orderBy("timestamp", "desc"));
+
+            const unsubscribe = onSnapshot(q, (snapshot) => {
+                const messagesList = snapshot.docs.map((doc) => ({
+                    id: doc.id,
+                    ...doc.data(),
+                    timestamp: doc.data().timestamp?.toDate().toLocaleString() || "No date",
+                }));
+                setMessages(messagesList);
+                setUnreadCount(messagesList.filter((m) => m.status === "unread").length);
+            }, (error) => {
+                console.error("Error listening to messages:", error);
+                toast.error("Failed to listen to messages");
+            });
+
+            return () => unsubscribe();
+        }
+    }, [user]);
 
     const handleLogin = async () => {
         try {
@@ -99,24 +145,6 @@ export default function AdminPanel() {
             setIsResettingPassword(false);
         }
     };
-
-    const fetchMessages = useCallback(async () => {
-        try {
-            const messagesRef = collection(getAuth(app).firestore(), "messages");
-            const q = query(messagesRef, orderBy("timestamp", "desc"));
-            const querySnapshot = await getDocs(q);
-            const messagesList = querySnapshot.docs.map((doc) => ({
-                id: doc.id,
-                ...doc.data(),
-                timestamp: doc.data().timestamp?.toDate().toLocaleString() || "No date",
-            }));
-            setMessages(messagesList);
-            setUnreadCount(messagesList.filter((m) => m.status === "unread").length);
-        } catch (error) {
-            console.error("Error fetching messages:", error);
-            toast.error("Failed to fetch messages");
-        }
-    }, []);
 
     const handleMarkAsRead = async (messageId) => {
         try {
@@ -161,7 +189,6 @@ export default function AdminPanel() {
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
-            <Toaster position="top-right" />
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}

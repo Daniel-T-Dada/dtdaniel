@@ -4,10 +4,10 @@
 importScripts('https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.7.0/firebase-messaging-compat.js');
 
-// Load configuration from a separate file that will be generated at build time
+// Load configuration from the generated file
 importScripts('/firebase-config.js');
 
-// Retrieve an instance of Firebase Messaging so that it can handle background messages.
+// Initialize Firebase Messaging
 const messaging = firebase.messaging();
 
 // Handle background messages
