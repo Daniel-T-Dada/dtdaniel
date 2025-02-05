@@ -6,3 +6,6 @@ firebase.initializeApp({
             messagingSenderId: "undefined",
             appId: "undefined"
         });
+
+        // Initialize Firebase Cloud Messaging and get a reference to the service
+        const messaging = firebase.messaging();

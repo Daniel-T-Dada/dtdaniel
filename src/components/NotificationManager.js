@@ -11,66 +11,92 @@ import { getFunctions, httpsCallable } from "firebase/functions";
 import { app } from "@/firebase/config";
 import { toast } from "react-hot-toast";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
-import Image from "next/image";
+import { getFirestore, doc, setDoc } from "firebase/firestore";
+
+function LoadingSpinner() {
+    return (
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+            <div className="animate-spin h-32 w-32 rounded-full border-b-2 border-indigo-500" role="status">
+                <span className="sr-only">Loading...</span>
+            </div>
+        </div>
+    );
+}
 
 export default function NotificationManager() {
+    const [mounted, setMounted] = useState(false);
     const [user, setUser] = useState(null);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     const setupPushNotifications = useCallback(async () => {
         try {
-            // Get the current user's ID token
+            // Check if the user is authenticated
             const auth = getAuth(app);
             const user = auth.currentUser;
             if (!user) {
                 throw new Error("User not authenticated");
             }
-            const idToken = await user.getIdToken();
 
-            // Exchange ID token for OAuth token
-            const tokenResponse = await fetch('/api/auth/token', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    idToken,
-                })
-            });
-
-            if (!tokenResponse.ok) {
-                const errorData = await tokenResponse.json();
-                throw new Error(`Failed to get OAuth token: ${JSON.stringify(errorData)}`);
+            // Check if messaging is supported
+            const isMessagingSupported = await isSupported();
+            if (!isMessagingSupported) {
+                throw new Error("Push notifications are not supported in this browser");
             }
 
-            const { access_token } = await tokenResponse.json();
-
-            // Rest of your existing push notification setup code...
+            // Register service worker
+            console.log('Registering service worker...');
             const registration = await registerServiceWorker();
+            console.log('Service worker registered successfully');
+
+            // Initialize messaging and get FCM token
+            console.log('Getting FCM token...');
             const messaging = getMessaging(app);
             const fcmToken = await getToken(messaging, {
                 vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
                 serviceWorkerRegistration: registration,
             });
 
-            // Update FCM token with the access token
-            await updateToken(fcmToken, access_token);
+            if (!fcmToken) {
+                throw new Error("Failed to get FCM token");
+            }
+            console.log('FCM token obtained successfully');
+
+            // Store the FCM token in Firestore
+            const db = getFirestore(app);
+            const userRef = doc(db, 'adminUsers', user.uid);
+            await setDoc(userRef, {
+                fcmTokens: [fcmToken],
+                lastUpdated: new Date()
+            }, { merge: true });
+
+            console.log('FCM token stored in Firestore');
+            toast.success('Notifications set up successfully', {
+                position: 'bottom-right'
+            });
+
+            // Handle foreground messages
+            onMessage(messaging, (payload) => {
+                console.log('Received foreground message:', payload);
+                toast.success(payload.notification.title, {
+                    description: payload.notification.body,
+                    position: 'bottom-right'
+                });
+            });
+
         } catch (error) {
-            console.error('Error setting up push notifications:', error);
-            toast.error('Failed to set up notifications');
+            console.error('Error setting up push notifications:', {
+                name: error.name,
+                message: error.message,
+                stack: error.stack
+            });
+            toast.error(error.message || 'Failed to set up notifications', {
+                position: 'bottom-right'
+            });
         }
     }, []);
-
-    useEffect(() => {
-        const auth = getAuth(app);
-        const unsubscribe = onAuthStateChanged(auth, async (user) => {
-            setUser(user);
-            if (user) {
-                await setupPushNotifications();
-            }
-        });
-
-        return () => unsubscribe();
-    }, [setupPushNotifications]);
 
     const registerServiceWorker = async () => {
         try {
@@ -88,5 +114,23 @@ export default function NotificationManager() {
         }
     };
 
-    return null; // This component doesn't render anything
+    useEffect(() => {
+        if (!mounted) return;
+
+        const auth = getAuth(app);
+        const unsubscribe = onAuthStateChanged(auth, async (user) => {
+            setUser(user);
+            if (user) {
+                await setupPushNotifications();
+            }
+        });
+
+        return () => unsubscribe();
+    }, [mounted, setupPushNotifications]);
+
+    if (!mounted) {
+        return <LoadingSpinner />;
+    }
+
+    return null;
 }

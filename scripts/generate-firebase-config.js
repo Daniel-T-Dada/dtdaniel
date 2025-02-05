@@ -3,14 +3,19 @@ const path = require("path");
 
 // Function to generate the Firebase configuration file
 function generateFirebaseConfig() {
-    // Create a minimal configuration for the service worker
+    // Create a configuration for the service worker with messaging support
     const config = `
         firebase.initializeApp({
             apiKey: "${process.env.NEXT_PUBLIC_FIREBASE_API_KEY}",
+            authDomain: "${process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN}",
             projectId: "${process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID}",
+            storageBucket: "${process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET}",
             messagingSenderId: "${process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID}",
             appId: "${process.env.NEXT_PUBLIC_FIREBASE_APP_ID}"
         });
+
+        // Initialize Firebase Cloud Messaging and get a reference to the service
+        const messaging = firebase.messaging();
     `.trim();
 
     // Write the configuration to a file
@@ -24,7 +29,7 @@ function generateFirebaseConfig() {
         config
     );
 
-    console.log("Firebase initialized successfully");
+    console.log("Firebase config generated with messaging support");
 }
 
 // Run the generation
