@@ -54,31 +54,3 @@ export default function RootLayoutWrapper({ children }) {
     </ThemeProvider>
   );
 }
-
-// Add global styles for toast animations
-const style = document.createElement('style');
-style.textContent = `
-  .toast-message {
-    animation: slideIn 0.2s ease-out;
-  }
-
-  .toast-success {
-    animation: slideIn 0.2s ease-out;
-  }
-
-  .toast-error {
-    animation: slideIn 0.2s ease-out;
-  }
-
-  @keyframes slideIn {
-    from {
-      transform: translateX(100%);
-      opacity: 0;
-    }
-    to {
-      transform: translateX(0);
-      opacity: 1;
-    }
-  }
-`;
-document.head.appendChild(style);
