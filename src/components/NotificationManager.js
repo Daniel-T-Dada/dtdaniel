@@ -6,17 +6,23 @@ import {
     getToken,
     onMessage,
     isSupported,
+    deleteToken
 } from "firebase/messaging";
 import { getFunctions, httpsCallable } from "firebase/functions";
 import { app } from "@/firebase/config";
 import { notify } from "@/utils/toast";
 import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
-import { getFirestore, doc, setDoc } from "firebase/firestore";
+import { getFirestore, doc, setDoc, onSnapshot } from "firebase/firestore";
+
+// Constants for token refresh and retry attempts
+const TOKEN_REFRESH_INTERVAL = 45 * 60 * 1000; // 45 minutes
+const MAX_RETRY_ATTEMPTS = 3;
+const RETRY_DELAY = 5000; // 5 seconds
 
 function LoadingSpinner() {
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-            <div className="animate-spin h-32 w-32 rounded-full border-b-2 border-indigo-500" role="status">
+        <div className="flex items-center justify-center p-4">
+            <div className="animate-spin h-8 w-8 rounded-full border-b-2 border-indigo-500" role="status">
                 <span className="sr-only">Loading...</span>
             </div>
         </div>
@@ -27,11 +33,61 @@ export default function NotificationManager() {
     const [mounted, setMounted] = useState(false);
     const [user, setUser] = useState(null);
     const [showNotificationPrompt, setShowNotificationPrompt] = useState(false);
+    const [retryAttempts, setRetryAttempts] = useState(0);
+    const [lastTokenRefresh, setLastTokenRefresh] = useState(Date.now());
 
+    // Set mounted to true when component mounts
     useEffect(() => {
         setMounted(true);
+        return () => setMounted(false);
     }, []);
 
+    // Production logging utility
+    const logToProduction = useCallback((type, message, error = null) => {
+        const logData = {
+            timestamp: new Date().toISOString(),
+            type,
+            message,
+            error: error ? {
+                message: error.message,
+                code: error.code,
+                stack: error.stack
+            } : null,
+            userAgent: navigator.userAgent,
+            url: window.location.href
+        };
+
+        // Log to console in development
+        if (process.env.NODE_ENV === 'development') {
+            console[type](`[FCM ${type}]:`, message, error || '');
+            return;
+        }
+
+        // In production, store logs in Firestore
+        try {
+            const db = getFirestore(app);
+            const logsRef = doc(db, 'fcmLogs', Date.now().toString());
+            setDoc(logsRef, logData);
+        } catch (logError) {
+            console.error('Failed to store log:', logError);
+        }
+    }, []);
+
+    // Token refresh mechanism
+    const refreshToken = useCallback(async () => {
+        try {
+            const messaging = getMessaging(app);
+            await deleteToken(messaging);
+            await setupPushNotifications();
+            setLastTokenRefresh(Date.now());
+            logToProduction('info', 'FCM token refreshed successfully');
+        } catch (error) {
+            logToProduction('error', 'Failed to refresh FCM token', error);
+            throw error;
+        }
+    }, []);
+
+    // Enhanced OAuth token retrieval with browser compatibility checks
     const getOAuthToken = async () => {
         try {
             const auth = getAuth(app);
@@ -41,19 +97,19 @@ export default function NotificationManager() {
                 throw new Error("User not authenticated");
             }
 
-            // Create a new GoogleAuthProvider instance
-            const provider = new GoogleAuthProvider();
+            // First try to get the token without showing the popup
+            try {
+                await currentUser.getIdToken(true);
+                return currentUser.accessToken;
+            } catch (refreshError) {
+                logToProduction('info', 'Token refresh failed, trying popup auth');
+            }
 
-            // Add the required scopes for FCM
+            // Only show popup if we really need to
+            const provider = new GoogleAuthProvider();
             provider.addScope('https://www.googleapis.com/auth/firebase.messaging');
             provider.addScope('https://www.googleapis.com/auth/cloud-platform');
 
-            // Ensure we're getting a fresh token
-            provider.setCustomParameters({
-                prompt: 'consent'
-            });
-
-            // Sign in with popup to get fresh OAuth credentials
             const result = await signInWithPopup(auth, provider);
             const credential = GoogleAuthProvider.credentialFromResult(result);
 
@@ -61,17 +117,19 @@ export default function NotificationManager() {
                 throw new Error("Failed to get access token");
             }
 
+            logToProduction('info', 'OAuth token retrieved successfully');
             return credential.accessToken;
         } catch (error) {
-            console.error('Error getting OAuth token:', error);
-            if (error.code === 'auth/popup-blocked') {
-                notify.error('Please allow popups for notification setup');
+            logToProduction('error', 'Error getting OAuth token', error);
+            if (error.code === 'auth/cancelled-popup-request') {
+                notify.error('Authentication popup was cancelled');
             }
             throw error;
         }
     };
 
-    const setupPushNotifications = useCallback(async () => {
+    // Enhanced setup with retry mechanism and error recovery
+    const setupPushNotifications = useCallback(async (isRetry = false) => {
         try {
             // Check if messaging is supported first
             const isMessagingSupported = await isSupported();
@@ -100,18 +158,41 @@ export default function NotificationManager() {
                     });
                 }
             } catch (swError) {
-                console.error('Service worker registration error:', swError);
+                logToProduction('error', 'Service worker registration error', swError);
                 throw swError;
             }
 
-            // Get OAuth token after service worker is ready
-            const oauthToken = await getOAuthToken();
-            if (!oauthToken) {
-                throw new Error("Failed to get OAuth token");
+            // Get messaging instance
+            const messaging = getMessaging(app);
+
+            // Try to get existing token first
+            try {
+                const existingToken = await getToken(messaging, {
+                    vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
+                    serviceWorkerRegistration: registration,
+                });
+
+                if (existingToken) {
+                    // Token exists, no need to get a new one
+                    logToProduction('info', 'Using existing FCM token');
+                    return;
+                }
+            } catch (tokenError) {
+                logToProduction('info', 'No existing token found, will create new one');
             }
 
-            // Initialize messaging with authentication
-            const messaging = getMessaging(app);
+            // Only proceed with OAuth and new token if we don't have a valid one
+            const auth = getAuth(app);
+            const user = auth.currentUser;
+
+            if (!user) {
+                throw new Error("User not authenticated");
+            }
+
+            // Get current ID token without popup
+            const idToken = await user.getIdToken(true);
+
+            // Get new FCM token
             let fcmToken;
             try {
                 fcmToken = await getToken(messaging, {
@@ -123,14 +204,12 @@ export default function NotificationManager() {
                     throw new Error("Failed to get FCM token");
                 }
             } catch (tokenError) {
-                console.error('FCM token error:', tokenError);
+                logToProduction('error', 'FCM token error', tokenError);
                 throw tokenError;
             }
 
             // Store the FCM token in Firestore
             try {
-                const auth = getAuth(app);
-                const user = auth.currentUser;
                 const db = getFirestore(app);
                 const userRef = doc(db, 'adminUsers', user.uid);
 
@@ -138,19 +217,27 @@ export default function NotificationManager() {
                     fcmTokens: [fcmToken],
                     lastUpdated: new Date(),
                     email: user.email,
-                    accessToken: oauthToken
+                    lastTokenRefresh: Date.now()
                 }, { merge: true });
 
                 // Call the Cloud Function to update the token
-                const functions = getFunctions(app);
-                const updateFCMToken = httpsCallable(functions, 'updateFCMToken');
-                await updateFCMToken({
-                    token: fcmToken,
-                    action: 'add',
-                    accessToken: oauthToken
-                });
+                try {
+                    const functions = getFunctions(app);
+                    const updateFCMToken = httpsCallable(functions, 'updateFCMToken');
+                    await updateFCMToken({
+                        token: fcmToken,
+                        action: 'add'
+                    });
+                } catch (functionError) {
+                    logToProduction('error', 'Failed to update FCM token in cloud function', functionError);
+                    // Don't throw here, as the token is already stored in Firestore
+                }
+
+                // Reset retry attempts on success
+                setRetryAttempts(0);
+                window.pushNotificationsSetup = true;
             } catch (dbError) {
-                console.error('Firestore error:', dbError);
+                logToProduction('error', 'Firestore error', dbError);
                 throw dbError;
             }
 
@@ -159,17 +246,69 @@ export default function NotificationManager() {
 
             // Handle foreground messages
             onMessage(messaging, (payload) => {
-                console.log('Received foreground message:', payload);
+                logToProduction('info', 'Received foreground message', payload);
                 notify.success(payload.notification.title);
             });
 
         } catch (error) {
-            console.error('Error setting up push notifications:', error);
-            notify.error(error.message || 'Failed to set up notifications');
-            throw error;
-        }
-    }, []);
+            logToProduction('error', 'Error setting up push notifications', error);
 
+            // Only retry for specific errors that might be temporary
+            const retryableErrors = ['auth/network-request-failed', 'INTERNAL'];
+            if (!isRetry && retryAttempts < MAX_RETRY_ATTEMPTS && retryableErrors.includes(error.code)) {
+                setRetryAttempts(prev => prev + 1);
+                setTimeout(() => {
+                    setupPushNotifications(true);
+                }, RETRY_DELAY);
+            } else {
+                window.pushNotificationsSetup = false;
+                if (!error.message.includes('cancelled')) {
+                    notify.error(error.message || 'Failed to set up notifications');
+                }
+                throw error;
+            }
+        }
+    }, [retryAttempts, logToProduction]);
+
+    // Monitor permission changes
+    useEffect(() => {
+        if (!mounted) return;
+
+        const handlePermissionChange = () => {
+            if (Notification.permission === 'granted') {
+                setupPushNotifications();
+            } else if (Notification.permission === 'denied') {
+                notify.error('Notification permission denied');
+            }
+        };
+
+        // Check if the browser supports the permissions API
+        if (navigator.permissions) {
+            navigator.permissions.query({ name: 'notifications' })
+                .then(permissionStatus => {
+                    permissionStatus.onchange = handlePermissionChange;
+                });
+        }
+
+        return () => {
+            // Cleanup permission listener if needed
+        };
+    }, [mounted, setupPushNotifications]);
+
+    // Token refresh interval
+    useEffect(() => {
+        if (!mounted || !user) return;
+
+        const tokenRefreshInterval = setInterval(() => {
+            if (Date.now() - lastTokenRefresh >= TOKEN_REFRESH_INTERVAL) {
+                refreshToken();
+            }
+        }, TOKEN_REFRESH_INTERVAL);
+
+        return () => clearInterval(tokenRefreshInterval);
+    }, [mounted, user, lastTokenRefresh, refreshToken]);
+
+    // Rest of the component remains the same...
     const handleNotificationPermission = async () => {
         try {
             const permission = await Notification.requestPermission();
@@ -179,7 +318,7 @@ export default function NotificationManager() {
                 throw new Error('Notification permission not granted');
             }
         } catch (error) {
-            console.error('Permission request error:', error);
+            logToProduction('error', 'Permission request error', error);
             notify.error('Failed to set up notifications');
         }
     };
@@ -190,10 +329,10 @@ export default function NotificationManager() {
                 const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
                     scope: '/'
                 });
-                console.log('Service Worker registered with scope:', registration.scope);
+                logToProduction('info', 'Service Worker registered', { scope: registration.scope });
                 return registration;
             } catch (error) {
-                console.error('Service Worker registration failed:', error);
+                logToProduction('error', 'Service Worker registration failed', error);
                 throw error;
             }
         }
@@ -206,16 +345,27 @@ export default function NotificationManager() {
         const auth = getAuth(app);
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
             setUser(user);
-            if (user && Notification.permission === 'granted') {
+            // Only attempt to set up push notifications if:
+            // 1. User is authenticated
+            // 2. Notification permission is already granted
+            // 3. We haven't set up notifications yet
+            if (user &&
+                Notification.permission === 'granted' &&
+                !window.pushNotificationsSetup) {
                 try {
+                    window.pushNotificationsSetup = true;
                     await setupPushNotifications();
                 } catch (error) {
-                    console.error('Failed to set up push notifications:', error);
+                    logToProduction('error', 'Failed to set up push notifications', error);
+                    window.pushNotificationsSetup = false;
                 }
             }
         });
 
-        return () => unsubscribe();
+        return () => {
+            unsubscribe();
+            window.pushNotificationsSetup = false;
+        };
     }, [mounted, setupPushNotifications]);
 
     if (!mounted) {
