@@ -23,6 +23,12 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
     
+    // Blog posts rules
+    match /blog-posts/{post} {
+      allow read: if true;  // Anyone can read blog posts
+      allow create, update, delete: if isAdmin();  // Only admin can modify
+    }
+    
     // Allow write access to messages collection for contact form
     match /messages/{document=**} {
       allow read: if isAdmin();

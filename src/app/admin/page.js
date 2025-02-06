@@ -198,60 +198,46 @@ export default function AdminPanel() {
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {/* Admin Navigation */}
-                <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <div className="flex flex-wrap items-center gap-4">
-                        <Link
-                            href="/"
-                            className="text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center"
-                        >
-                            <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                            </svg>
-                            Home
-                        </Link>
-                        <Link
-                            href="/projects"
-                            className="text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center"
-                        >
-                            <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                            </svg>
-                            Projects
-                        </Link>
-                        <Link
-                            href="/contact"
-                            className="text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center"
-                        >
-                            <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                            </svg>
-                            Contact
-                        </Link>
-                    </div>
-                    <div className="flex items-center gap-4">
-                        <ThemeToggle />
-                        <button
-                            onClick={() => getAuth(app).signOut()}
-                            className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 flex items-center"
-                        >
-                            <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                            </svg>
-                            Sign Out
-                        </button>
-                    </div>
+            <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
+                {/* Admin Navigation - Mobile Optimized */}
+                <div className="mb-4 sm:mb-8 flex flex-wrap items-center gap-2 sm:gap-4">
+                    <Link
+                        href="/"
+                        className="text-sm sm:text-base text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800"
+                    >
+                        <svg className="w-4 h-4 sm:w-5 sm:h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                        </svg>
+                        Home
+                    </Link>
+                    <Link
+                        href="/projects"
+                        className="text-sm sm:text-base text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800"
+                    >
+                        <svg className="w-4 h-4 sm:w-5 sm:h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                        </svg>
+                        Projects
+                    </Link>
+                    <Link
+                        href="/contact"
+                        className="text-sm sm:text-base text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800"
+                    >
+                        <svg className="w-4 h-4 sm:w-5 sm:h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                        Contact
+                    </Link>
                 </div>
 
-                {/* Admin Panel Content */}
+                {/* Admin Panel Content - Mobile Optimized */}
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     className="max-w-7xl mx-auto"
                 >
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-                        <div>
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6 sm:mb-8">
+                        <div className="space-y-2">
                             <motion.h1
                                 initial={{ opacity: 0, x: -20 }}
                                 animate={{ opacity: 1, x: 0 }}
@@ -262,14 +248,14 @@ export default function AdminPanel() {
                             <motion.p
                                 initial={{ opacity: 0, y: -10 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className="mt-2 text-sm text-indigo-600 dark:text-indigo-400"
+                                className="text-sm text-indigo-600 dark:text-indigo-400"
                             >
                                 {unreadCount > 0 && `${unreadCount} unread ${unreadCount === 1 ? "message" : "messages"}`}
                             </motion.p>
                         </div>
                         <Link
                             href="/admin/projects"
-                            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                            className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 w-full sm:w-auto whitespace-nowrap"
                         >
                             Manage Projects
                         </Link>
@@ -285,7 +271,7 @@ export default function AdminPanel() {
                                 <motion.p
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
-                                    className="p-6 text-center text-gray-500 dark:text-gray-400"
+                                    className="p-4 sm:p-6 text-center text-gray-500 dark:text-gray-400"
                                 >
                                     No messages yet
                                 </motion.p>
@@ -325,47 +311,47 @@ const MessageCard = memo(({ message, index, onMarkAsRead, onReply }) => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1 }}
-            className={`p-6 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${message.status === "unread" ? "bg-indigo-50 dark:bg-indigo-900/20" : ""
+            className={`p-3 sm:p-6 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${message.status === "unread" ? "bg-indigo-50 dark:bg-indigo-900/20" : ""
                 }`}
         >
-            <div className="flex flex-col space-y-4">
-                <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex flex-col space-y-3 sm:space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4">
                     <div className="flex-grow">
-                        <div className="flex items-center flex-wrap gap-4">
-                            <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                        <div className="flex flex-wrap items-center gap-2">
+                            <h3 className="text-base sm:text-lg font-medium text-gray-900 dark:text-white">
                                 {message.subject}
                             </h3>
                             {message.status === "unread" && (
-                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200">
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200">
                                     Unread
                                 </span>
                             )}
                             {message.status === "replied" && (
-                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
                                     Replied
                                 </span>
                             )}
                         </div>
-                        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                        <p className="mt-1 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                             From: {message.name} ({message.email})
                         </p>
                     </div>
-                    <div className="flex items-center gap-4">
-                        <span className="text-sm text-gray-500 dark:text-gray-400">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
+                        <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
                             {message.timestamp}
                         </span>
-                        <div className="flex flex-row items-center gap-2">
+                        <div className="flex flex-wrap gap-2">
                             {message.status === "unread" && (
                                 <button
                                     onClick={() => onMarkAsRead(message.id)}
-                                    className="text-sm whitespace-nowrap text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-200 transition-colors px-3 py-1 rounded-md border border-indigo-200 dark:border-indigo-800 hover:border-indigo-300 dark:hover:border-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/30"
+                                    className="text-xs sm:text-sm whitespace-nowrap text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-200 transition-colors px-2 sm:px-3 py-1 rounded-md border border-indigo-200 dark:border-indigo-800 hover:border-indigo-300 dark:hover:border-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/30"
                                 >
                                     Mark as Read
                                 </button>
                             )}
                             <button
                                 onClick={() => onReply()}
-                                className="text-sm whitespace-nowrap text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-200 transition-colors px-3 py-1 rounded-md border border-indigo-200 dark:border-indigo-800 hover:border-indigo-300 dark:hover:border-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/30"
+                                className="text-xs sm:text-sm whitespace-nowrap text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-200 transition-colors px-2 sm:px-3 py-1 rounded-md border border-indigo-200 dark:border-indigo-800 hover:border-indigo-300 dark:hover:border-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/30"
                             >
                                 Reply
                             </button>
@@ -373,22 +359,22 @@ const MessageCard = memo(({ message, index, onMarkAsRead, onReply }) => {
                     </div>
                 </div>
 
-                <div className="mt-4">
-                    <p className="text-gray-600 dark:text-gray-300 whitespace-pre-wrap">
+                <div className="mt-2 sm:mt-4">
+                    <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap">
                         {message.message}
                     </p>
 
                     {message.replies && message.replies.length > 0 && (
-                        <div className="mt-4 space-y-4">
-                            <h4 className="text-sm font-medium text-gray-900 dark:text-white">
+                        <div className="mt-3 sm:mt-4 space-y-3 sm:space-y-4">
+                            <h4 className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white">
                                 Replies
                             </h4>
                             {message.replies.map((reply, replyIndex) => (
                                 <div
                                     key={replyIndex}
-                                    className="pl-4 border-l-2 border-indigo-500"
+                                    className="pl-3 sm:pl-4 border-l-2 border-indigo-500"
                                 >
-                                    <div className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap">
+                                    <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap">
                                         {reply.content}
                                     </div>
                                     <div className="mt-1 text-xs text-gray-500">
