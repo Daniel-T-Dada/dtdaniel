@@ -26,6 +26,7 @@ function LoadingSpinner() {
 export default function NotificationManager() {
     const [mounted, setMounted] = useState(false);
     const [user, setUser] = useState(null);
+    const [showNotificationPrompt, setShowNotificationPrompt] = useState(false);
 
     useEffect(() => {
         setMounted(true);
@@ -41,12 +42,16 @@ export default function NotificationManager() {
             provider.addScope('https://www.googleapis.com/auth/firebase.messaging');
 
             const auth = getAuth(app);
+            // Use signInWithRedirect instead of popup for better compatibility
             const result = await signInWithPopup(auth, provider);
             const credential = GoogleAuthProvider.credentialFromResult(result);
 
             return credential.accessToken;
         } catch (error) {
             console.error('Error getting OAuth token:', error);
+            if (error.code === 'auth/popup-blocked') {
+                notify.error('Please allow popups for notification setup');
+            }
             throw error;
         }
     };
@@ -60,27 +65,27 @@ export default function NotificationManager() {
                 throw new Error("User not authenticated");
             }
 
-            // Get OAuth token
-            const oauthToken = await getOAuthToken(user);
-            if (!oauthToken) {
-                throw new Error("Failed to get OAuth token");
-            }
-
-            // Check if messaging is supported
+            // Check if messaging is supported first
             const isMessagingSupported = await isSupported();
             if (!isMessagingSupported) {
                 throw new Error("Push notifications are not supported in this browser");
             }
 
-            // Check notification permission
+            // Check notification permission first
             if (Notification.permission === 'denied') {
                 throw new Error('Notification permission denied by user');
             }
+
+            // Show notification prompt if permission not granted
             if (Notification.permission === 'default') {
-                const permission = await Notification.requestPermission();
-                if (permission !== 'granted') {
-                    throw new Error('Notification permission not granted');
-                }
+                setShowNotificationPrompt(true);
+                return; // Wait for user interaction
+            }
+
+            // Get OAuth token
+            const oauthToken = await getOAuthToken(user);
+            if (!oauthToken) {
+                throw new Error("Failed to get OAuth token");
             }
 
             // Register service worker
@@ -104,7 +109,7 @@ export default function NotificationManager() {
                 fcmToken = await getToken(messaging, {
                     vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
                     serviceWorkerRegistration: registration,
-                    token: oauthToken // Include OAuth token
+                    token: oauthToken
                 });
 
                 if (!fcmToken) {
@@ -123,7 +128,7 @@ export default function NotificationManager() {
                     fcmTokens: [fcmToken],
                     lastUpdated: new Date(),
                     email: user.email,
-                    oauthToken // Store OAuth token
+                    oauthToken
                 }, { merge: true });
             } catch (dbError) {
                 console.error('Firestore error:', dbError);
@@ -131,6 +136,7 @@ export default function NotificationManager() {
             }
 
             notify.success('Notifications set up successfully');
+            setShowNotificationPrompt(false);
 
             // Handle foreground messages
             onMessage(messaging, (payload) => {
@@ -144,6 +150,20 @@ export default function NotificationManager() {
             throw error;
         }
     }, []);
+
+    const handleNotificationPermission = async () => {
+        try {
+            const permission = await Notification.requestPermission();
+            if (permission === 'granted') {
+                await setupPushNotifications();
+            } else {
+                throw new Error('Notification permission not granted');
+            }
+        } catch (error) {
+            console.error('Permission request error:', error);
+            notify.error('Failed to set up notifications');
+        }
+    };
 
     const registerServiceWorker = async () => {
         if ('serviceWorker' in navigator) {
@@ -192,5 +212,29 @@ export default function NotificationManager() {
         return <LoadingSpinner />;
     }
 
-    return null;
+    return (
+        <>
+            {showNotificationPrompt && (
+                <div className="fixed bottom-4 right-4 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg z-50">
+                    <p className="text-sm text-gray-700 dark:text-gray-300 mb-3">
+                        Would you like to enable notifications for new messages?
+                    </p>
+                    <div className="flex justify-end space-x-2">
+                        <button
+                            onClick={() => setShowNotificationPrompt(false)}
+                            className="px-3 py-1 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+                        >
+                            Later
+                        </button>
+                        <button
+                            onClick={handleNotificationPermission}
+                            className="px-3 py-1 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700"
+                        >
+                            Enable
+                        </button>
+                    </div>
+                </div>
+            )}
+        </>
+    );
 }
