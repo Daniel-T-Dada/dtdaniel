@@ -32,19 +32,34 @@ export default function NotificationManager() {
         setMounted(true);
     }, []);
 
-    const getOAuthToken = async (user) => {
+    const getOAuthToken = async () => {
         try {
-            // Force refresh to get a new ID token
-            const idToken = await user.getIdToken(true);
-
-            // Get OAuth token using Google sign-in
-            const provider = new GoogleAuthProvider();
-            provider.addScope('https://www.googleapis.com/auth/firebase.messaging');
-
             const auth = getAuth(app);
-            // Use signInWithRedirect instead of popup for better compatibility
+            const currentUser = auth.currentUser;
+
+            if (!currentUser) {
+                throw new Error("User not authenticated");
+            }
+
+            // Create a new GoogleAuthProvider instance
+            const provider = new GoogleAuthProvider();
+
+            // Add the required scopes for FCM
+            provider.addScope('https://www.googleapis.com/auth/firebase.messaging');
+            provider.addScope('https://www.googleapis.com/auth/cloud-platform');
+
+            // Ensure we're getting a fresh token
+            provider.setCustomParameters({
+                prompt: 'consent'
+            });
+
+            // Sign in with popup to get fresh OAuth credentials
             const result = await signInWithPopup(auth, provider);
             const credential = GoogleAuthProvider.credentialFromResult(result);
+
+            if (!credential?.accessToken) {
+                throw new Error("Failed to get access token");
+            }
 
             return credential.accessToken;
         } catch (error) {
@@ -58,13 +73,6 @@ export default function NotificationManager() {
 
     const setupPushNotifications = useCallback(async () => {
         try {
-            // Check if the user is authenticated
-            const auth = getAuth(app);
-            const user = auth.currentUser;
-            if (!user) {
-                throw new Error("User not authenticated");
-            }
-
             // Check if messaging is supported first
             const isMessagingSupported = await isSupported();
             if (!isMessagingSupported) {
@@ -82,13 +90,7 @@ export default function NotificationManager() {
                 return; // Wait for user interaction
             }
 
-            // Get OAuth token
-            const oauthToken = await getOAuthToken(user);
-            if (!oauthToken) {
-                throw new Error("Failed to get OAuth token");
-            }
-
-            // Register service worker
+            // Register service worker first
             let registration;
             try {
                 registration = await registerServiceWorker();
@@ -102,6 +104,12 @@ export default function NotificationManager() {
                 throw swError;
             }
 
+            // Get OAuth token after service worker is ready
+            const oauthToken = await getOAuthToken();
+            if (!oauthToken) {
+                throw new Error("Failed to get OAuth token");
+            }
+
             // Initialize messaging with authentication
             const messaging = getMessaging(app);
             let fcmToken;
@@ -109,7 +117,6 @@ export default function NotificationManager() {
                 fcmToken = await getToken(messaging, {
                     vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
                     serviceWorkerRegistration: registration,
-                    token: oauthToken
                 });
 
                 if (!fcmToken) {
@@ -122,14 +129,26 @@ export default function NotificationManager() {
 
             // Store the FCM token in Firestore
             try {
+                const auth = getAuth(app);
+                const user = auth.currentUser;
                 const db = getFirestore(app);
                 const userRef = doc(db, 'adminUsers', user.uid);
+
                 await setDoc(userRef, {
                     fcmTokens: [fcmToken],
                     lastUpdated: new Date(),
                     email: user.email,
-                    oauthToken
+                    accessToken: oauthToken
                 }, { merge: true });
+
+                // Call the Cloud Function to update the token
+                const functions = getFunctions(app);
+                const updateFCMToken = httpsCallable(functions, 'updateFCMToken');
+                await updateFCMToken({
+                    token: fcmToken,
+                    action: 'add',
+                    accessToken: oauthToken
+                });
             } catch (dbError) {
                 console.error('Firestore error:', dbError);
                 throw dbError;
@@ -187,20 +206,11 @@ export default function NotificationManager() {
         const auth = getAuth(app);
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
             setUser(user);
-            if (user) {
+            if (user && Notification.permission === 'granted') {
                 try {
                     await setupPushNotifications();
                 } catch (error) {
                     console.error('Failed to set up push notifications:', error);
-                    if (error.message?.includes('service worker')) {
-                        setTimeout(async () => {
-                            try {
-                                await setupPushNotifications();
-                            } catch (retryError) {
-                                console.error('Retry failed:', retryError);
-                            }
-                        }, 2000);
-                    }
                 }
             }
         });
