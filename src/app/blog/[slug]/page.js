@@ -5,40 +5,58 @@ import { Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ChevronLeftIcon, ChevronRightIcon, ShareIcon } from '@heroicons/react/24/outline';
+import ReadingProgress from '@/components/ReadingProgress';
+import TableOfContents from '@/components/TableOfContents';
+import CodeBlock from '@/components/CodeBlock';
+import { processCodeBlocks } from '@/utils/processCodeBlocks';
+import { generateBlogPostSchema, generateBreadcrumbSchema, generatePersonSchema } from '@/utils/schemaGenerators';
 
 export const revalidate = 3600; // Revalidate every hour
 
 // Generate metadata for the page
-export async function generateMetadata({ params }) {
-    const { slug } = await Promise.resolve(params);
+export async function generateMetadata({ params: { slug } }) {
     const post = await getBlogPost(slug);
-    if (!post) return {};
+    if (!post) return null;
 
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-    const url = `${baseUrl}/blog/${post.slug}`;
-
-    // Strip HTML tags and get plain text for description
-    const stripHtml = (html) => html.replace(/<[^>]*>/g, '');
-    const description = post.excerpt || stripHtml(post.content).substring(0, 160).trim() + '...';
-
-    // Use post cover image or default to site OG image
-    const imageUrl = post.coverImage || `${baseUrl}/images/og-default.png`;
-    const imageWidth = 1200;
-    const imageHeight = 630;
+    const jsonLd = {
+        article: generateBlogPostSchema(post),
+        breadcrumb: generateBreadcrumbSchema([
+            { name: 'Home', url: process.env.NEXT_PUBLIC_BASE_URL },
+            { name: 'Blog', url: `${process.env.NEXT_PUBLIC_BASE_URL}/blog` },
+            { name: post.title, url: `${process.env.NEXT_PUBLIC_BASE_URL}/blog/${post.slug}` }
+        ]),
+        author: generatePersonSchema(),
+        webpage: {
+            '@context': 'https://schema.org',
+            '@type': 'WebPage',
+            name: post.title,
+            description: post.excerpt || post.content.substring(0, 200),
+            url: `${process.env.NEXT_PUBLIC_BASE_URL}/blog/${post.slug}`,
+            author: generatePersonSchema(),
+            datePublished: post.createdAt,
+            dateModified: post.updatedAt,
+            image: post.coverImage || `${process.env.NEXT_PUBLIC_BASE_URL}/images/og-blog.png`,
+            isPartOf: {
+                '@type': 'Blog',
+                name: 'Daniel Dada Blog',
+                url: `${process.env.NEXT_PUBLIC_BASE_URL}/blog`
+            }
+        }
+    };
 
     return {
-        title: `${post.title} | Daniel Dada`,
-        description,
+        title: `${post.title} | Daniel Dada Blog`,
+        description: post.excerpt || post.content.substring(0, 200),
         openGraph: {
             title: post.title,
-            description,
-            url,
-            siteName: 'Daniel Dada Portfolio',
+            description: post.excerpt || post.content.substring(0, 200),
+            url: `${process.env.NEXT_PUBLIC_BASE_URL}/blog/${post.slug}`,
+            siteName: 'Daniel Dada Blog',
             images: [
                 {
-                    url: imageUrl,
-                    width: imageWidth,
-                    height: imageHeight,
+                    url: post.coverImage || `${process.env.NEXT_PUBLIC_BASE_URL}/images/og-blog.png`,
+                    width: 1200,
+                    height: 630,
                     alt: post.title,
                 }
             ],
@@ -52,27 +70,17 @@ export async function generateMetadata({ params }) {
         twitter: {
             card: 'summary_large_image',
             title: post.title,
-            description,
+            description: post.excerpt || post.content.substring(0, 200),
             creator: '@simplytobs',
-            site: '@simplytobs',
-            images: [{
-                url: imageUrl,
-                width: imageWidth,
-                height: imageHeight,
-                alt: post.title,
-            }],
+            images: [post.coverImage || `${process.env.NEXT_PUBLIC_BASE_URL}/images/og-blog.png`],
         },
         alternates: {
-            canonical: url,
+            canonical: `${process.env.NEXT_PUBLIC_BASE_URL}/blog/${post.slug}`,
         },
-        robots: {
-            index: post.published,
-            follow: post.published,
-            'max-image-preview': 'large',
-            'max-snippet': -1,
-            'max-video-preview': -1,
+        other: {
+            'google-site-verification': process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,
         },
-        keywords: post.tags ? post.tags.join(', ') : undefined,
+        jsonLd,
     };
 }
 
@@ -192,6 +200,9 @@ async function BlogPostContent({ slug }) {
 
     return (
         <article className="min-h-screen bg-white dark:bg-gray-900 py-12">
+            <ReadingProgress content={post.content} />
+            <TableOfContents content={post.content} />
+
             {/* Draft Preview Banner */}
             {!post.published && (
                 <div className="bg-yellow-50 dark:bg-yellow-900/30 border-b border-yellow-100 dark:border-yellow-900 sticky top-0 z-10">
@@ -302,8 +313,24 @@ async function BlogPostContent({ slug }) {
                     )}
                 </header>
 
-                <div className="prose prose-base sm:prose-lg dark:prose-invert max-w-none px-1 sm:px-0">
-                    <div dangerouslySetInnerHTML={{ __html: post.content }} />
+                <div className="prose prose-base sm:prose-lg dark:prose-invert max-w-none px-1 sm:px-0 prose-headings:scroll-mt-20 prose-pre:p-0 prose-pre:bg-transparent prose-pre:overflow-x-auto prose-img:rounded-lg prose-img:shadow-lg">
+                    {processCodeBlocks(post.content).map((part, index) => (
+                        part.type === 'code' ? (
+                            <CodeBlock
+                                key={index}
+                                code={part.code}
+                                language={part.language}
+                                filename={part.filename}
+                                highlightedLines={part.highlightedLines}
+                            />
+                        ) : (
+                            <div
+                                key={index}
+                                className="tinymce-content"
+                                dangerouslySetInnerHTML={{ __html: part.content }}
+                            />
+                        )
+                    ))}
                 </div>
 
                 {post.tags && post.tags.length > 0 && (

@@ -28,6 +28,14 @@ if (!getApps().length) {
 export const db = getFirestore(app);
 export const auth = getAuth(app);
 
+// Collection references
+export const COLLECTIONS = {
+    BLOG_POSTS: 'blog-posts',
+    DRAFTS: 'blog-drafts',
+    DRAFT_VERSIONS: 'draft-versions',
+    DRAFT_SHARES: 'draft-shares'
+};
+
 // Export the app instance if needed elsewhere
 export const firebaseApp = app;
 
