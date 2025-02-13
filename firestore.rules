@@ -28,6 +28,22 @@ service cloud.firestore {
       allow read: if true;  // Anyone can read blog posts
       allow create, update, delete: if isAdmin();  // Only admin can modify
     }
+
+    // Draft management rules
+    match /blog-drafts/{draft} {
+      allow read, write: if isAdmin();
+    }
+
+    match /draft-versions/{version} {
+      allow read, write: if isAdmin();
+    }
+
+    match /draft-shares/{token} {
+      // Anyone can read share tokens to verify access
+      allow read: if true;
+      // Only admin can create or modify share tokens
+      allow create, update, delete: if isAdmin();
+    }
     
     // Allow write access to messages collection for contact form
     match /messages/{document=**} {

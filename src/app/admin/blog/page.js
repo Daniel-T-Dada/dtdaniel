@@ -17,7 +17,8 @@ async function getBlogPosts() {
             id: doc.id,
             ...data,
             createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
-            updatedAt: data.updatedAt?.toDate?.()?.toISOString() || new Date().toISOString()
+            updatedAt: data.updatedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+            scheduledFor: data.scheduledFor?.toDate?.()?.toISOString() || data.scheduledFor
         };
     });
 }

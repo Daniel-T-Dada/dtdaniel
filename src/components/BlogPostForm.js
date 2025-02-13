@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import slugify from 'slugify';
 import { toast } from 'react-hot-toast';
+import { schedulePost, updateScheduledPost } from '@/utils/scheduleManager';
 
 // Import TinyMCE with dynamic import to avoid SSR issues
 const Editor = dynamic(() => import('@tinymce/tinymce-react').then(mod => mod.Editor), {
@@ -25,6 +26,8 @@ export default function BlogPostForm({ post = null }) {
         tags: post?.tags?.join(', ') || '',
         coverImage: post?.coverImage || '',
         published: post?.published || false,
+        scheduledFor: post?.scheduledFor ? new Date(post.scheduledFor).toISOString().slice(0, 16) : '',
+        status: post?.status || 'draft'
     });
 
     const handleSubmit = async (e) => {
@@ -48,10 +51,21 @@ export default function BlogPostForm({ post = null }) {
                 ...(post ? {} : { createdAt: serverTimestamp() })
             };
 
-            const docRef = doc(db, 'blog-posts', post?.id || crypto.randomUUID());
-            await setDoc(docRef, postData, { merge: true });
+            if (formData.scheduledFor) {
+                // Handle scheduled post
+                if (post?.id) {
+                    await updateScheduledPost(post.id, postData, formData.scheduledFor);
+                } else {
+                    await schedulePost(postData, formData.scheduledFor);
+                }
+                toast.success(post ? 'Post schedule updated!' : 'Post scheduled successfully!');
+            } else {
+                // Handle regular post
+                const docRef = doc(db, 'blog-posts', post?.id || crypto.randomUUID());
+                await setDoc(docRef, postData, { merge: true });
+                toast.success(post ? 'Post updated successfully!' : 'Post created successfully!');
+            }
 
-            toast.success(post ? 'Post updated successfully!' : 'Post created successfully!');
             router.push('/admin/blog');
             router.refresh();
         } catch (error) {
@@ -134,9 +148,73 @@ export default function BlogPostForm({ post = null }) {
 
             {/* Content */}
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 lg:p-6">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                    Content *
-                </label>
+                <div className="flex justify-between items-center mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
+                        Content *
+                    </label>
+                    <button
+                        type="button"
+                        onClick={() => {
+                            const testContent = `
+<h2>Introduction</h2>
+<p>This is a test post to demonstrate the enhanced code block features. We'll look at different programming languages and formatting options.</p>
+
+<h2>JavaScript Example</h2>
+<p>Here's a simple JavaScript function with some comments:</p>
+
+<pre class="language-javascript filename="example.js"">
+// A simple function to calculate factorial
+function factorial(n) {
+    // Base case
+    if (n <= 1) return 1;
+    
+    // Recursive case
+    return n * factorial(n - 1);
+}
+
+// Test the function
+console.log(factorial(5)); // Output: 120
+</pre>
+
+<h2>Python Example</h2>
+<p>Let's look at a Python class definition:</p>
+
+<pre class="language-python filename="person.py"">
+class Person:
+    def __init__(self, name, age):
+        self.name = name
+        self.age = age
+    
+    def greet(self):
+        return f"Hello, my name is {self.name} and I'm {self.age} years old!"
+
+# Create a new person
+person = Person("Alice", 30)
+print(person.greet())
+</pre>
+
+<h3>Testing Features</h3>
+<p>This post demonstrates:</p>
+<ul>
+    <li>Syntax highlighting for multiple languages</li>
+    <li>Copy button functionality</li>
+    <li>Language indicators</li>
+    <li>Filename display</li>
+    <li>Line numbers</li>
+</ul>`;
+                            setFormData(prev => ({
+                                ...prev,
+                                title: "Testing Code Block Features",
+                                category: "Development",
+                                tags: "code, testing, development",
+                                content: testContent
+                            }));
+                        }}
+                        className="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-200"
+                    >
+                        Load Test Template
+                    </button>
+                </div>
                 <div className="prose max-w-none">
                     <Editor
                         apiKey={process.env.NEXT_PUBLIC_TINYMCE_API_KEY}
@@ -144,25 +222,55 @@ export default function BlogPostForm({ post = null }) {
                         onEditorChange={(content) => setFormData(prev => ({ ...prev, content }))}
                         init={{
                             height: 400,
-                            menubar: false,
+                            menubar: true,
                             plugins: [
                                 'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
                                 'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-                                'insertdatetime', 'media', 'table', 'code', 'help', 'wordcount'
+                                'insertdatetime', 'media', 'table', 'code', 'help', 'wordcount',
+                                'codesample'
                             ],
-                            toolbar: 'styles | bold italic | ' +
-                                'bullist numlist | link image | ' +
+                            toolbar: 'styles | bold italic | bullist numlist | link image | codesample | ' +
                                 'alignleft aligncenter alignright',
-                            content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 16px; }',
+                            content_style: `
+                                body { 
+                                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; 
+                                    font-size: 16px; 
+                                }
+                                pre { 
+                                    background-color: #1e293b;
+                                    color: #e2e8f0;
+                                    padding: 1rem;
+                                    border-radius: 0.5rem;
+                                    overflow-x: auto;
+                                }
+                            `,
                             skin: formData.darkMode ? 'oxide-dark' : 'oxide',
                             content_css: formData.darkMode ? 'dark' : 'default',
+                            codesample_languages: [
+                                { text: 'JavaScript', value: 'javascript' },
+                                { text: 'TypeScript', value: 'typescript' },
+                                { text: 'HTML/XML', value: 'markup' },
+                                { text: 'CSS', value: 'css' },
+                                { text: 'Python', value: 'python' },
+                                { text: 'Bash', value: 'bash' },
+                                { text: 'JSON', value: 'json' }
+                            ],
                             mobile: {
-                                menubar: false,
-                                toolbar: 'undo redo bold italic | link image | bullist numlist',
+                                menubar: true,
+                                toolbar: 'undo redo bold italic | link image codesample | bullist numlist',
                                 height: 300
                             }
                         }}
                     />
+                </div>
+                <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                    <p>To add code blocks:</p>
+                    <ol className="list-decimal ml-4 space-y-1">
+                        <li>Click the {'<>'} (Code Sample) button in the toolbar</li>
+                        <li>Select a language from the dropdown</li>
+                        <li>Paste or type your code</li>
+                        <li>Click OK to insert the code block</li>
+                    </ol>
                 </div>
             </div>
 
@@ -180,6 +288,35 @@ export default function BlogPostForm({ post = null }) {
                 />
             </div>
 
+            {/* Scheduling Options */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 lg:p-6">
+                <div className="space-y-4">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
+                        Schedule Publication
+                    </label>
+                    <input
+                        type="datetime-local"
+                        className="w-full px-3 lg:px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent"
+                        value={formData.scheduledFor}
+                        onChange={(e) => {
+                            setFormData(prev => ({
+                                ...prev,
+                                scheduledFor: e.target.value,
+                                published: false,
+                                status: e.target.value ? 'scheduled' : 'draft'
+                            }));
+                        }}
+                        min={new Date().toISOString().slice(0, 16)}
+                    />
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {formData.scheduledFor
+                            ? `This post will be published on ${new Date(formData.scheduledFor).toLocaleString()}`
+                            : 'Leave empty to publish immediately or save as draft'
+                        }
+                    </p>
+                </div>
+            </div>
+
             {/* Publishing Options */}
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 lg:p-6">
                 <div className="flex items-center">
@@ -188,14 +325,27 @@ export default function BlogPostForm({ post = null }) {
                         id="published"
                         className="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-400"
                         checked={formData.published}
-                        onChange={(e) => setFormData(prev => ({ ...prev, published: e.target.checked }))}
+                        onChange={(e) => {
+                            setFormData(prev => ({
+                                ...prev,
+                                published: e.target.checked,
+                                scheduledFor: e.target.checked ? '' : prev.scheduledFor,
+                                status: e.target.checked ? 'published' : 'draft'
+                            }));
+                        }}
+                        disabled={!!formData.scheduledFor}
                     />
                     <label htmlFor="published" className="ml-2 block text-sm text-gray-900 dark:text-gray-100">
-                        Publish post
+                        Publish now
                     </label>
                 </div>
                 <p className="mt-2 text-xs lg:text-sm text-gray-500 dark:text-gray-400">
-                    {formData.published ? 'This post will be visible to the public' : 'This post will be saved as a draft'}
+                    {formData.scheduledFor
+                        ? 'Scheduled posts cannot be published immediately'
+                        : formData.published
+                            ? 'This post will be visible to the public'
+                            : 'This post will be saved as a draft'
+                    }
                 </p>
             </div>
 

@@ -1,0 +1,14 @@
+# Allow all crawlers
+User-agent: *
+Allow: /
+
+# Sitemaps
+Sitemap: https://dtdaniel.site/sitemap.xml
+Sitemap: https://dtdaniel.site/blog-sitemap.xml
+
+# Disallow admin routes
+Disallow: /admin/
+Disallow: /api/
+
+# Crawl-delay
+Crawl-delay: 10 
