@@ -13,6 +13,18 @@ const nextConfig = {
             {
                 protocol: "https",
                 hostname: "*.firebasestorage.googleapis.com",
+            },
+            {
+                protocol: "https",
+                hostname: "*.fna.fbcdn.net",
+            },
+            {
+                protocol: "https",
+                hostname: "scontent.flos1-3.fna.fbcdn.net",
+            },
+            {
+                protocol: "https",
+                hostname: "*.fbcdn.net",
             }
         ],
     },

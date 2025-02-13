@@ -57,7 +57,9 @@ function EditPageContent({ post }) {
 }
 
 export default async function EditBlogPost({ params }) {
-    const post = await getBlogPost(params.id);
+    // Ensure params is awaited
+    const { id } = await Promise.resolve(params);
+    const post = await getBlogPost(id);
 
     return (
         <Suspense

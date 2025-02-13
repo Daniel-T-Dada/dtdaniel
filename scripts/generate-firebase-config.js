@@ -3,7 +3,7 @@ const path = require("path");
 
 // Function to generate the Firebase configuration file
 function generateFirebaseConfig() {
-    // Create a configuration for the service worker with messaging support
+    // Create a configuration for Firebase initialization
     const config = `
         // Firebase configuration object
         const firebaseConfig = {
@@ -11,7 +11,6 @@ function generateFirebaseConfig() {
             authDomain: "${process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN}",
             projectId: "${process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID}",
             storageBucket: "${process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET}",
-            messagingSenderId: "${process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID}",
             appId: "${process.env.NEXT_PUBLIC_FIREBASE_APP_ID}"
         };
 

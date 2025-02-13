@@ -6,6 +6,37 @@ import Image from 'next/image';
 
 export const revalidate = 3600; // Revalidate every hour
 
+export const metadata = {
+    title: 'Blog | Daniel Dada',
+    description: 'Thoughts, stories and ideas about tech, life, and everything in between',
+    openGraph: {
+        title: 'Blog | Daniel Dada',
+        description: 'Thoughts, stories and ideas about tech, life, and everything in between',
+        url: 'https://dtdaniel.site/blog',
+        siteName: 'Daniel Dada Portfolio',
+        images: [
+            {
+                url: `${process.env.NEXT_PUBLIC_BASE_URL}/images/og-blog.png`,
+                width: 1200,
+                height: 630,
+                alt: 'Daniel Dada Blog',
+            }
+        ],
+        locale: 'en_US',
+        type: 'website',
+    },
+    twitter: {
+        card: 'summary_large_image',
+        title: 'Blog | Daniel Dada',
+        description: 'Thoughts, stories and ideas about tech, life, and everything in between',
+        creator: '@simplytobs',
+        images: [`${process.env.NEXT_PUBLIC_BASE_URL}/images/og-blog.png`],
+    },
+    alternates: {
+        canonical: `${process.env.NEXT_PUBLIC_BASE_URL}/blog`,
+    },
+};
+
 async function getBlogPosts() {
     try {
         const blogRef = collection(db, 'blog-posts');
@@ -61,7 +92,7 @@ export default async function BlogPage() {
 
                 {posts.length > 0 ? (
                     <div className="mt-12 space-y-8">
-                        {posts.map((post) => (
+                        {posts.map((post, index) => (
                             <article key={post.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
                                 <Link href={`/blog/${post.slug}`}>
                                     <div className="p-6">
@@ -69,7 +100,10 @@ export default async function BlogPage() {
                                             <Image
                                                 src={post.coverImage}
                                                 alt={post.title}
+                                                width={800}
+                                                height={400}
                                                 className="w-full h-48 object-cover rounded-md mb-4"
+                                                priority={index === 0}
                                             />
                                         )}
                                         <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
