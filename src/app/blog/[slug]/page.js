@@ -4,15 +4,14 @@ import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
-import { ShareIcon } from '@heroicons/react/24/outline';
-import { Metadata } from 'next';
+import { ChevronLeftIcon, ChevronRightIcon, ShareIcon } from '@heroicons/react/24/outline';
 
 export const revalidate = 3600; // Revalidate every hour
 
 // Generate metadata for the page
 export async function generateMetadata({ params }) {
-    const post = await getBlogPost(params.slug);
+    const { slug } = await Promise.resolve(params);
+    const post = await getBlogPost(slug);
     if (!post) return {};
 
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
@@ -24,6 +23,8 @@ export async function generateMetadata({ params }) {
 
     // Use post cover image or default to site OG image
     const imageUrl = post.coverImage || `${baseUrl}/images/og-default.png`;
+    const imageWidth = 1200;
+    const imageHeight = 630;
 
     return {
         title: `${post.title} | Daniel Dada`,
@@ -36,8 +37,8 @@ export async function generateMetadata({ params }) {
             images: [
                 {
                     url: imageUrl,
-                    width: 1200,
-                    height: 630,
+                    width: imageWidth,
+                    height: imageHeight,
                     alt: post.title,
                 }
             ],
@@ -52,13 +53,26 @@ export async function generateMetadata({ params }) {
             card: 'summary_large_image',
             title: post.title,
             description,
-            images: [imageUrl],
             creator: '@simplytobs',
             site: '@simplytobs',
+            images: [{
+                url: imageUrl,
+                width: imageWidth,
+                height: imageHeight,
+                alt: post.title,
+            }],
         },
         alternates: {
             canonical: url,
         },
+        robots: {
+            index: post.published,
+            follow: post.published,
+            'max-image-preview': 'large',
+            'max-snippet': -1,
+            'max-video-preview': -1,
+        },
+        keywords: post.tags ? post.tags.join(', ') : undefined,
     };
 }
 
@@ -209,7 +223,8 @@ async function BlogPostContent({ slug }) {
                         <Image
                             src={post.coverImage}
                             alt={post.title}
-                            fill
+                            width={1200}
+                            height={675}
                             className="rounded-lg shadow-lg object-cover"
                             priority
                         />
@@ -348,6 +363,10 @@ async function BlogPostContent({ slug }) {
 }
 
 export default async function BlogPost({ params }) {
+    // Ensure params is awaited
+    const { slug } = await Promise.resolve(params);
+    const post = await getBlogPost(slug);
+
     return (
         <Suspense
             fallback={
@@ -356,7 +375,7 @@ export default async function BlogPost({ params }) {
                 </div>
             }
         >
-            <BlogPostContent slug={params.slug} />
+            <BlogPostContent slug={post?.slug} />
         </Suspense>
     );
 }

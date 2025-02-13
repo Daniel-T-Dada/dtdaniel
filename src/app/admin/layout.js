@@ -1,12 +1,12 @@
 "use client";
 
-import NotificationManager from "@/components/NotificationManager";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Bars3Icon, XMarkIcon, ArrowRightOnRectangleIcon } from "@heroicons/react/24/outline";
 import ThemeToggle from "@/components/ThemeToggle";
-import { getAuth } from "firebase/auth";
+import { signOut } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
 
 const navigation = [
@@ -22,11 +22,10 @@ export default function AdminLayout({ children }) {
 
   const handleSignOut = async () => {
     try {
-      const auth = getAuth();
-      await auth.signOut();
-      router.push('/admin');
+      await signOut(auth);
+      router.push("/");
     } catch (error) {
-      console.error('Error signing out:', error);
+      console.error("Error signing out:", error);
     }
   };
 
@@ -72,8 +71,6 @@ export default function AdminLayout({ children }) {
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
-      <NotificationManager />
-
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
         <div
@@ -96,32 +93,32 @@ export default function AdminLayout({ children }) {
         </button>
       </div>
 
-      <div className="flex">
-        {/* Sidebar for desktop */}
-        <div className="hidden lg:block fixed top-0 left-0 h-screen w-64 overflow-y-auto bg-white dark:bg-gray-800 shadow-lg">
-          <div className="p-4 h-full flex flex-col">
-            <SidebarContent />
-          </div>
+      {/* Sidebar for desktop */}
+      <div className="hidden lg:block fixed top-0 left-0 h-screen w-64 overflow-y-auto bg-white dark:bg-gray-800 shadow-lg">
+        <div className="p-4 h-full flex flex-col">
+          <SidebarContent />
         </div>
+      </div>
 
-        {/* Sidebar for mobile */}
-        <div
-          className={`
-            lg:hidden fixed top-0 left-0 z-40 h-full w-64 
-            transform transition-transform duration-200 ease-in-out
-            ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-            bg-white dark:bg-gray-800 shadow-lg
-          `}
-        >
-          <div className="flex flex-col h-full p-4 pt-16">
-            <SidebarContent />
-          </div>
+      {/* Sidebar for mobile */}
+      <div
+        className={`
+                    lg:hidden fixed top-0 left-0 z-40 h-full w-64 
+                    transform transition-transform duration-200 ease-in-out
+                    ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+                    bg-white dark:bg-gray-800 shadow-lg
+                `}
+      >
+        <div className="flex flex-col h-full p-4 pt-16">
+          <SidebarContent />
         </div>
+      </div>
 
-        {/* Main content */}
-        <div className="flex-1 lg:ml-64">
-          <main className="p-4 lg:p-6 mt-12 lg:mt-0">{children}</main>
-        </div>
+      {/* Main content */}
+      <div className="lg:pl-64">
+        <main className="p-4 lg:p-6">
+          {children}
+        </main>
       </div>
     </div>
   );

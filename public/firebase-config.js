@@ -4,7 +4,6 @@
             authDomain: "undefined",
             projectId: "undefined",
             storageBucket: "undefined",
-            messagingSenderId: "undefined",
             appId: "undefined"
         };
 

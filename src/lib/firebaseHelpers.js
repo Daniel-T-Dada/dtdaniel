@@ -106,28 +106,22 @@ export const addContactMessage = async (messageData) => {
         const messagesRef = collection(db, "messages");
         const docRef = await addDoc(messagesRef, {
             ...messageData,
-            timestamp: serverTimestamp(),
             status: "unread",
+            timestamp: serverTimestamp(), // For compatibility with admin page
+            createdAt: serverTimestamp(),
         });
 
-        // Send email notification using Firebase Cloud Functions
-        try {
-            const response = await fetch("/api/notify", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    messageId: docRef.id,
-                    ...messageData,
-                }),
-            });
+        // Send email notification
+        const response = await fetch("/api/notify", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(messageData),
+        });
 
-            if (!response.ok) {
-                console.error("Failed to send email notification");
-            }
-        } catch (error) {
-            console.error("Error sending email notification:", error);
+        if (!response.ok) {
+            throw new Error("Failed to send notification");
         }
 
         return { success: true, id: docRef.id };
