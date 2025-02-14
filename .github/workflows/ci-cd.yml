@@ -13,6 +13,13 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      - name: Debug directory structure
+        run: |
+          pwd
+          ls -la
+          echo "Current directory contents:"
+          ls -R
+
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
