@@ -9,6 +9,9 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: .
 
     steps:
       - uses: actions/checkout@v3
@@ -18,18 +21,15 @@ jobs:
         with:
           node-version: "18"
           cache: "npm"
-          cache-dependency-path: portfolio/package-lock.json
+          cache-dependency-path: "./package-lock.json"
 
       - name: Install dependencies
-        working-directory: portfolio
         run: npm ci
 
       - name: Lint
-        working-directory: portfolio
         run: npm run lint
 
       - name: Build
-        working-directory: portfolio
         run: npm run build
         env:
           NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
