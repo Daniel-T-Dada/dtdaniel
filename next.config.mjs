@@ -40,7 +40,13 @@ const nextConfig = {
         deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
         imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
         formats: ['image/webp', 'image/avif'],
-        domains: ['storage.googleapis.com'],
+        domains: [
+            'firebasestorage.googleapis.com',
+            'lh3.googleusercontent.com',
+            'avatars.githubusercontent.com',
+            'images.unsplash.com',
+            'source.unsplash.com',
+        ],
     },
     // Enable React Strict Mode for better development experience
     reactStrictMode: true,

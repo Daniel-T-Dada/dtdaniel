@@ -56,10 +56,21 @@ jobs:
       - name: Deploy to Vercel
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: |
-          npm install --global vercel
-          vercel pull --yes --environment=production --token=$VERCEL_TOKEN
+          echo "Installing Vercel CLI..."
+          npm install --global vercel@latest
+
+          echo "Verifying Vercel Project Configuration..."
+          echo "Project ID: $VERCEL_PROJECT_ID"
+          echo "Org ID: $VERCEL_ORG_ID"
+
+          echo "Pulling Vercel Environment..."
+          vercel pull --yes --environment=production --token=$VERCEL_TOKEN --scope=$VERCEL_ORG_ID
+
+          echo "Building Project..."
           vercel build --prod --token=$VERCEL_TOKEN
-          vercel deploy --prebuilt --prod --token=$VERCEL_TOKEN
+
+          echo "Deploying to Vercel..."
+          vercel deploy --prebuilt --prod --token=$VERCEL_TOKEN --scope=$VERCEL_ORG_ID
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}

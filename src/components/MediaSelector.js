@@ -1,10 +1,22 @@
-import { useState } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import MediaLibrary from './MediaLibrary';
+import { MediaSelectorSkeleton } from './common/MediaSkeleton';
+import ImageUpload from './ImageUpload';
 
 export default function MediaSelector({ onSelect, multiple = false, selectedMedia = [] }) {
     const [isOpen, setIsOpen] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+    const [uploadedFiles, setUploadedFiles] = useState([]);
+
+    useEffect(() => {
+        // Simulate loading delay (remove this in production)
+        const timer = setTimeout(() => {
+            setIsLoading(false);
+        }, 1000);
+        return () => clearTimeout(timer);
+    }, []);
 
     const handleSelect = (media) => {
         onSelect(media);
@@ -13,8 +25,17 @@ export default function MediaSelector({ onSelect, multiple = false, selectedMedi
         }
     };
 
+    const handleUploadComplete = useCallback((files) => {
+        setUploadedFiles(prev => [...prev, ...files]);
+    }, []);
+
+    if (isLoading) {
+        return <MediaSelectorSkeleton />;
+    }
+
     return (
         <div className="space-y-4">
+            <ImageUpload onUploadComplete={handleUploadComplete} />
             {/* Selected Media Preview */}
             {selectedMedia.length > 0 && (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
@@ -81,6 +102,7 @@ export default function MediaSelector({ onSelect, multiple = false, selectedMedi
                                     onSelect={handleSelect}
                                     multiple={multiple}
                                     initialSelected={selectedMedia}
+                                    uploadedFiles={uploadedFiles}
                                     onClose={() => setIsOpen(false)}
                                 />
                             </div>

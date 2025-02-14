@@ -9,6 +9,8 @@ import slugify from 'slugify';
 import { toast } from 'react-hot-toast';
 import { schedulePost, updateScheduledPost } from '@/utils/scheduleManager';
 import MediaSelector from './MediaSelector';
+import OptimizedImage from './common/OptimizedImage';
+import { BlogFormSkeleton } from './common/FormSkeleton';
 import { embedPlugin } from '@/utils/tinyMceEmbedPlugin';
 import { playgroundPlugin } from '@/utils/tinyMcePlaygroundPlugin';
 import { galleryPlugin } from '@/utils/tinyMceGalleryPlugin';
@@ -61,7 +63,6 @@ export default function BlogPostForm({ post = null }) {
             };
 
             if (formData.scheduledFor) {
-                // Handle scheduled post
                 if (post?.id) {
                     await updateScheduledPost(post.id, postData, formData.scheduledFor);
                 } else {
@@ -69,7 +70,6 @@ export default function BlogPostForm({ post = null }) {
                 }
                 toast.success(post ? 'Post schedule updated!' : 'Post scheduled successfully!');
             } else {
-                // Handle regular post
                 const docRef = doc(db, 'blog-posts', post?.id || crypto.randomUUID());
                 await setDoc(docRef, postData, { merge: true });
                 toast.success(post ? 'Post updated successfully!' : 'Post created successfully!');
@@ -158,6 +158,10 @@ export default function BlogPostForm({ post = null }) {
         }
     };
 
+    if (loading) {
+        return <BlogFormSkeleton />;
+    }
+
     return (
         <form onSubmit={handleSubmit} className="space-y-6 max-w-[95vw] lg:max-w-none mx-auto">
             {/* Title */}
@@ -190,9 +194,11 @@ export default function BlogPostForm({ post = null }) {
                     />
                     {formData.coverImage && (
                         <div className="mt-4">
-                            <img
+                            <OptimizedImage
                                 src={formData.coverImage}
                                 alt="Cover preview"
+                                width={1200}
+                                height={630}
                                 className="w-full h-32 lg:h-48 object-cover rounded-md"
                                 onError={(e) => e.target.style.display = 'none'}
                             />
