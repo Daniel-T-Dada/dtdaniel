@@ -12,13 +12,19 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
 
       - name: Debug directory structure
         run: |
+          echo "Current working directory:"
           pwd
+          echo "\nRoot directory contents:"
           ls -la
-          echo "Current directory contents:"
-          ls -R
+          echo "\nParent directory contents:"
+          ls -la ..
+          echo "\nRepository root contents:"
+          ls -la $GITHUB_WORKSPACE
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
