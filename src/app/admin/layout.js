@@ -13,6 +13,7 @@ const navigation = [
   { name: "Dashboard", href: "/admin" },
   { name: "Projects", href: "/admin/projects" },
   { name: "Blog Posts", href: "/admin/blog" },
+  { name: "Media Library", href: "/admin/media" },
 ];
 
 export default function AdminLayout({ children }) {

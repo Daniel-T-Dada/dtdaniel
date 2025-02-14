@@ -8,6 +8,13 @@ import dynamic from 'next/dynamic';
 import slugify from 'slugify';
 import { toast } from 'react-hot-toast';
 import { schedulePost, updateScheduledPost } from '@/utils/scheduleManager';
+import MediaSelector from './MediaSelector';
+import { embedPlugin } from '@/utils/tinyMceEmbedPlugin';
+import { playgroundPlugin } from '@/utils/tinyMcePlaygroundPlugin';
+import { galleryPlugin } from '@/utils/tinyMceGalleryPlugin';
+import { chartPlugin } from '@/utils/tinyMceChartPlugin';
+import { mermaidPlugin } from '@/utils/tinyMceMermaidPlugin';
+import ReactDOM from 'react-dom/client';
 
 // Import TinyMCE with dynamic import to avoid SSR issues
 const Editor = dynamic(() => import('@tinymce/tinymce-react').then(mod => mod.Editor), {
@@ -29,6 +36,7 @@ export default function BlogPostForm({ post = null }) {
         scheduledFor: post?.scheduledFor ? new Date(post.scheduledFor).toISOString().slice(0, 16) : '',
         status: post?.status || 'draft'
     });
+    const [selectedMedia, setSelectedMedia] = useState(post?.media || []);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -48,6 +56,7 @@ export default function BlogPostForm({ post = null }) {
                 published: formData.published,
                 slug,
                 updatedAt: serverTimestamp(),
+                media: selectedMedia,
                 ...(post ? {} : { createdAt: serverTimestamp() })
             };
 
@@ -73,6 +82,79 @@ export default function BlogPostForm({ post = null }) {
             toast.error('Error saving post. Please try again.');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleMediaSelect = (media) => {
+        setSelectedMedia(Array.isArray(media) ? media : [media]);
+    };
+
+    const editorConfig = {
+        height: 500,
+        menubar: false,
+        plugins: [
+            'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
+            'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
+            'insertdatetime', 'media', 'table', 'code', 'help', 'wordcount'
+        ],
+        toolbar: 'undo redo | blocks | ' +
+            'bold italic forecolor | alignleft aligncenter ' +
+            'alignright alignjustify | bullist numlist outdent indent | ' +
+            'removeformat | link embed playground gallery chart mermaid | help',
+        content_style: `
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+                font-size: 16px;
+                line-height: 1.6;
+                color: #333;
+            }
+            pre {
+                background-color: #f4f4f4;
+                padding: 1em;
+                border-radius: 4px;
+                overflow-x: auto;
+            }
+            .embed-container {
+                position: relative;
+                padding-bottom: 56.25%;
+                height: 0;
+                overflow: hidden;
+                max-width: 100%;
+            }
+            .gallery-container {
+                background-color: #f4f4f4;
+                padding: 1em;
+                border-radius: 4px;
+                margin: 1em 0;
+                min-height: 100px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: #666;
+            }
+        `,
+        setup: (editor) => {
+            playgroundPlugin(editor);
+            galleryPlugin(editor);
+            embedPlugin(editor);
+            chartPlugin(editor);
+            mermaidPlugin(editor);
+        },
+        mediaSelector: {
+            render: (container, options) => {
+                const root = ReactDOM.createRoot(container);
+                root.render(
+                    <MediaSelector
+                        onSelect={options.onSelect}
+                        multiple={options.multiple}
+                    />
+                );
+                return {
+                    destroy: () => {
+                        root.unmount();
+                    }
+                };
+            }
         }
     };
 
@@ -215,52 +297,22 @@ print(person.greet())
                         Load Test Template
                     </button>
                 </div>
+                <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Media Gallery
+                    </label>
+                    <MediaSelector
+                        onSelect={handleMediaSelect}
+                        multiple={true}
+                        selectedMedia={selectedMedia}
+                    />
+                </div>
                 <div className="prose max-w-none">
                     <Editor
                         apiKey={process.env.NEXT_PUBLIC_TINYMCE_API_KEY}
                         value={formData.content}
                         onEditorChange={(content) => setFormData(prev => ({ ...prev, content }))}
-                        init={{
-                            height: 400,
-                            menubar: true,
-                            plugins: [
-                                'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
-                                'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-                                'insertdatetime', 'media', 'table', 'code', 'help', 'wordcount',
-                                'codesample'
-                            ],
-                            toolbar: 'styles | bold italic | bullist numlist | link image | codesample | ' +
-                                'alignleft aligncenter alignright',
-                            content_style: `
-                                body { 
-                                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; 
-                                    font-size: 16px; 
-                                }
-                                pre { 
-                                    background-color: #1e293b;
-                                    color: #e2e8f0;
-                                    padding: 1rem;
-                                    border-radius: 0.5rem;
-                                    overflow-x: auto;
-                                }
-                            `,
-                            skin: formData.darkMode ? 'oxide-dark' : 'oxide',
-                            content_css: formData.darkMode ? 'dark' : 'default',
-                            codesample_languages: [
-                                { text: 'JavaScript', value: 'javascript' },
-                                { text: 'TypeScript', value: 'typescript' },
-                                { text: 'HTML/XML', value: 'markup' },
-                                { text: 'CSS', value: 'css' },
-                                { text: 'Python', value: 'python' },
-                                { text: 'Bash', value: 'bash' },
-                                { text: 'JSON', value: 'json' }
-                            ],
-                            mobile: {
-                                menubar: true,
-                                toolbar: 'undo redo bold italic | link image codesample | bullist numlist',
-                                height: 300
-                            }
-                        }}
+                        init={editorConfig}
                     />
                 </div>
                 <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">
