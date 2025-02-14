@@ -9,9 +9,6 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: .
 
     steps:
       - uses: actions/checkout@v3
@@ -21,15 +18,18 @@ jobs:
         with:
           node-version: "18"
           cache: "npm"
-          cache-dependency-path: "./package-lock.json"
+          cache-dependency-path: portfolio/package-lock.json
 
       - name: Install dependencies
-        run: npm ci
+        working-directory: portfolio
+        run: npm install
 
       - name: Lint
+        working-directory: portfolio
         run: npm run lint
 
       - name: Build
+        working-directory: portfolio
         run: npm run build
         env:
           NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
@@ -43,6 +43,7 @@ jobs:
 
       - name: Deploy to Vercel
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        working-directory: portfolio
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
