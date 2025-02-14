@@ -43,7 +43,7 @@ export default function ImageUpload({ onImageUploaded, currentImageUrl = null })
         }
     };
 
-    const handleFile = async (file) => {
+    const handleFile = useCallback(async (file) => {
         // Validate file type (accept any image format)
         if (!file.type.startsWith('image/')) {
             notify.error("Please upload an image file");
@@ -118,7 +118,11 @@ export default function ImageUpload({ onImageUploaded, currentImageUrl = null })
             notify.error("Failed to process image");
             setIsUploading(false);
         }
-    };
+    }, [onImageUploaded]);
+
+    const onDrop = useCallback((acceptedFiles) => {
+        acceptedFiles.forEach(handleFile);
+    }, [handleFile]);
 
     return (
         <div className="space-y-4">

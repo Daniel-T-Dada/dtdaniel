@@ -6,7 +6,7 @@ import { uploadMedia, getMediaLibrary, deleteMedia, updateMediaMetadata, searchM
 import { toast } from 'react-hot-toast';
 import MediaItem from './MediaItem';
 
-export default function MediaLibrary({ onSelect, multiple = false, initialSelected = [], onClose }) {
+export default function MediaLibrary({ onSelect, multiple = false, initialSelected = [], uploadedFiles = [], onClose }) {
     const [mediaItems, setMediaItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [uploading, setUploading] = useState(false);
@@ -18,7 +18,7 @@ export default function MediaLibrary({ onSelect, multiple = false, initialSelect
 
     useEffect(() => {
         loadMediaLibrary();
-    }, [filters]);
+    }, [loadMediaLibrary]);
 
     // Extract unique tags from media items
     useEffect(() => {
@@ -29,7 +29,7 @@ export default function MediaLibrary({ onSelect, multiple = false, initialSelect
         setAvailableTags(Array.from(tags));
     }, [mediaItems]);
 
-    async function loadMediaLibrary() {
+    const loadMediaLibrary = useCallback(async () => {
         try {
             setLoading(true);
             const items = await getMediaLibrary(filters);
@@ -40,7 +40,7 @@ export default function MediaLibrary({ onSelect, multiple = false, initialSelect
         } finally {
             setLoading(false);
         }
-    }
+    }, []);
 
     const handleFileUpload = async (event) => {
         const files = Array.from(event.target.files);
@@ -61,7 +61,7 @@ export default function MediaLibrary({ onSelect, multiple = false, initialSelect
         }
     };
 
-    const handleDelete = async (mediaId, fileName) => {
+    const handleDelete = useCallback(async (mediaId, fileName) => {
         if (!confirm('Are you sure you want to delete this item?')) return;
 
         try {
@@ -69,11 +69,12 @@ export default function MediaLibrary({ onSelect, multiple = false, initialSelect
             setMediaItems(prev => prev.filter(item => item.id !== mediaId));
             setSelectedItems(prev => prev.filter(item => item.id !== mediaId));
             toast.success('Media deleted successfully');
+            await loadMediaLibrary();
         } catch (error) {
             console.error('Error deleting media:', error);
             toast.error('Failed to delete media');
         }
-    };
+    }, [loadMediaLibrary]);
 
     const handleSearch = useCallback(async () => {
         if (!searchTerm.trim()) {
@@ -91,7 +92,7 @@ export default function MediaLibrary({ onSelect, multiple = false, initialSelect
         } finally {
             setLoading(false);
         }
-    }, [searchTerm]);
+    }, [searchTerm, loadMediaLibrary]);
 
     const handleSelect = useCallback((item) => {
         if (!multiple) {

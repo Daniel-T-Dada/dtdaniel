@@ -1,3 +1,5 @@
+'use client';
+
 import { BlogDetailSkeleton } from './common/BlogSkeleton';
 
 export default function BlogDetail({ isLoading = false }) {
@@ -5,7 +7,5 @@ export default function BlogDetail({ isLoading = false }) {
         return <BlogDetailSkeleton />;
     }
 
-    return (
-        // ... existing code ...
-    );
+    return null; // Replace with your actual blog detail content
 } 

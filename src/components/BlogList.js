@@ -1,3 +1,5 @@
+'use client';
+
 import { BlogGridSkeleton, BlogListSkeleton, BlogHeaderSkeleton } from './common/BlogSkeleton';
 
 export default function BlogList({ view = 'grid', isLoading = false }) {
@@ -14,7 +16,5 @@ export default function BlogList({ view = 'grid', isLoading = false }) {
         );
     }
 
-    return (
-        // ... existing code ...
-    );
+    return null; // Replace with your actual blog list content
 } 
