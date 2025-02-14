@@ -10,11 +10,15 @@ import TableOfContents from '@/components/TableOfContents';
 import CodeBlock from '@/components/CodeBlock';
 import { processCodeBlocks } from '@/utils/processCodeBlocks';
 import { generateBlogPostSchema, generateBreadcrumbSchema, generatePersonSchema } from '@/utils/schemaGenerators';
+import EmbedRenderer from '@/components/embeds/EmbedRenderer';
+import BlogContent from '@/components/BlogContent';
 
 export const revalidate = 3600; // Revalidate every hour
 
 // Generate metadata for the page
-export async function generateMetadata({ params: { slug } }) {
+export async function generateMetadata({ params }) {
+    // Await params before destructuring
+    const { slug } = await Promise.resolve(params);
     const post = await getBlogPost(slug);
     if (!post) return null;
 
@@ -164,9 +168,18 @@ async function getBlogPost(slug) {
 
         const doc = querySnapshot.docs[0];
         const data = doc.data();
+
+        // Convert media timestamps if media exists
+        const media = data.media?.map(item => ({
+            ...item,
+            uploadedAt: item.uploadedAt?.toDate?.()?.toISOString() || null,
+            updatedAt: item.updatedAt?.toDate?.()?.toISOString() || null
+        })) || [];
+
         return {
             id: doc.id,
             ...data,
+            media,
             createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
             updatedAt: data.updatedAt?.toDate?.()?.toISOString() || new Date().toISOString()
         };
@@ -234,152 +247,93 @@ async function BlogPostContent({ slug }) {
                         <Image
                             src={post.coverImage}
                             alt={post.title}
-                            width={1200}
-                            height={675}
-                            className="rounded-lg shadow-lg object-cover"
+                            fill
+                            className="object-cover rounded-lg"
                             priority
                         />
                     </div>
                 )}
 
-                <header className="text-center mb-8 sm:mb-12">
-                    <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 dark:text-gray-100 mb-4">
-                        {post.title}
-                    </h1>
+                <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-gray-100 mb-4">
+                    {post.title}
+                </h1>
 
-                    <div className="flex flex-wrap items-center justify-center gap-2 text-gray-600 dark:text-gray-400">
-                        <time dateTime={post.createdAt} className="text-sm">
-                            {new Date(post.createdAt).toLocaleDateString('en-US', {
-                                year: 'numeric',
-                                month: 'long',
-                                day: 'numeric'
-                            })}
-                        </time>
-                        {post.category && (
-                            <>
-                                <span className="hidden sm:inline mx-2">•</span>
-                                <span className="bg-gray-100 dark:bg-gray-800 px-2 sm:px-3 py-1 rounded-full text-sm">
-                                    {post.category}
-                                </span>
-                            </>
-                        )}
-                        {!post.published && (
-                            <>
-                                <span className="hidden sm:inline mx-2">•</span>
-                                <span className="bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 px-2 sm:px-3 py-1 rounded-full text-sm">
-                                    Draft
-                                </span>
-                            </>
-                        )}
-                    </div>
-
-                    {/* Share buttons */}
-                    {post.published && (
-                        <div className="mt-4 flex items-center justify-center gap-3">
-                            <a
-                                href={shareUrls.twitter}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-gray-600 dark:text-gray-400 hover:text-blue-400 dark:hover:text-blue-300 transition-colors"
-                                title="Share on Twitter"
-                            >
-                                <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 012 18.407a11.616 11.616 0 006.29 1.84" />
-                                </svg>
-                            </a>
-                            <a
-                                href={shareUrls.facebook}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-500 transition-colors"
-                                title="Share on Facebook"
-                            >
-                                <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" />
-                                </svg>
-                            </a>
-                            <a
-                                href={shareUrls.linkedin}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-gray-600 dark:text-gray-400 hover:text-blue-700 dark:hover:text-blue-600 transition-colors"
-                                title="Share on LinkedIn"
-                            >
-                                <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" />
-                                </svg>
-                            </a>
-                        </div>
+                <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-8">
+                    <time dateTime={post.createdAt}>
+                        {new Date(post.createdAt).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                        })}
+                    </time>
+                    {post.tags && post.tags.length > 0 && (
+                        <>
+                            <span className="mx-2">•</span>
+                            <div className="flex items-center gap-2">
+                                {post.tags.map(tag => (
+                                    <span
+                                        key={tag}
+                                        className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200"
+                                    >
+                                        {tag}
+                                    </span>
+                                ))}
+                            </div>
+                        </>
                     )}
-                </header>
-
-                <div className="prose prose-base sm:prose-lg dark:prose-invert max-w-none px-1 sm:px-0 prose-headings:scroll-mt-20 prose-pre:p-0 prose-pre:bg-transparent prose-pre:overflow-x-auto prose-img:rounded-lg prose-img:shadow-lg">
-                    {processCodeBlocks(post.content).map((part, index) => (
-                        part.type === 'code' ? (
-                            <CodeBlock
-                                key={index}
-                                code={part.code}
-                                language={part.language}
-                                filename={part.filename}
-                                highlightedLines={part.highlightedLines}
-                            />
-                        ) : (
-                            <div
-                                key={index}
-                                className="tinymce-content"
-                                dangerouslySetInnerHTML={{ __html: part.content }}
-                            />
-                        )
-                    ))}
                 </div>
 
-                {post.tags && post.tags.length > 0 && (
-                    <div className="mt-8 sm:mt-12 pt-6 border-t border-gray-200 dark:border-gray-700">
-                        <div className="flex flex-wrap gap-2">
-                            {post.tags.map((tag) => (
-                                <span
-                                    key={tag}
-                                    className="bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm"
-                                >
-                                    #{tag}
-                                </span>
-                            ))}
-                        </div>
-                    </div>
-                )}
+                <BlogContent content={post.content} />
 
-                {/* Show navigation only for published posts - Mobile Optimized */}
+                {/* Share buttons */}
+                <div className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
+                    <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+                        Share this post
+                    </h2>
+                    <div className="flex gap-4">
+                        {Object.entries(shareUrls).map(([platform, url]) => (
+                            <a
+                                key={platform}
+                                href={url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                            >
+                                Share on {platform.charAt(0).toUpperCase() + platform.slice(1)}
+                            </a>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Navigation between posts */}
                 {post.published && (
-                    <nav className="mt-8 sm:mt-12 pt-6 border-t border-gray-200 dark:border-gray-700">
-                        <div className="flex items-center justify-between">
-                            {previousPost ? (
+                    <nav className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
+                        <div className="grid grid-cols-2 gap-4">
+                            {previousPost && (
                                 <Link
                                     href={`/blog/${previousPost.slug}`}
-                                    className="flex items-center text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300"
+                                    className="group"
                                 >
-                                    <ChevronLeftIcon className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
-                                    <div>
-                                        <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Previous</div>
-                                        <div className="text-xs sm:text-sm font-medium line-clamp-1">{previousPost.title}</div>
-                                    </div>
+                                    <span className="block text-sm text-gray-500 dark:text-gray-400 mb-1">
+                                        Previous Post
+                                    </span>
+                                    <span className="block text-base font-medium text-gray-900 dark:text-gray-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
+                                        {previousPost.title}
+                                    </span>
                                 </Link>
-                            ) : (
-                                <div className="w-16"></div>
                             )}
-
-                            {nextPost ? (
+                            {nextPost && (
                                 <Link
                                     href={`/blog/${nextPost.slug}`}
-                                    className="flex items-center text-right text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300"
+                                    className="group text-right"
                                 >
-                                    <div>
-                                        <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Next</div>
-                                        <div className="text-xs sm:text-sm font-medium line-clamp-1">{nextPost.title}</div>
-                                    </div>
-                                    <ChevronRightIcon className="h-4 w-4 sm:h-5 sm:w-5 ml-2" />
+                                    <span className="block text-sm text-gray-500 dark:text-gray-400 mb-1">
+                                        Next Post
+                                    </span>
+                                    <span className="block text-base font-medium text-gray-900 dark:text-gray-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
+                                        {nextPost.title}
+                                    </span>
                                 </Link>
-                            ) : (
-                                <div className="w-16"></div>
                             )}
                         </div>
                     </nav>

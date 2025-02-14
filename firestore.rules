@@ -44,6 +44,12 @@ service cloud.firestore {
       // Only admin can create or modify share tokens
       allow create, update, delete: if isAdmin();
     }
+
+    // Media library rules
+    match /media-library/{item} {
+      allow get, list: if true;  // Allow both reading individual items and listing
+      allow create, update, delete: if isAdmin();  // Only admin can modify
+    }
     
     // Allow write access to messages collection for contact form
     match /messages/{document=**} {

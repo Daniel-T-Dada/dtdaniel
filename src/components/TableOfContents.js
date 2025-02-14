@@ -28,9 +28,12 @@ export default function TableOfContents({ content }) {
         const extractedHeadings = extractHeadings(content);
         setHeadings(extractedHeadings);
 
-        // Add IDs to the actual headings in the content
-        const article = document.querySelector('article');
-        if (article) {
+        // Function to set up observers
+        const setupObservers = () => {
+            // Add IDs to the actual headings in the content
+            const article = document.querySelector('article');
+            if (!article) return;
+
             extractedHeadings.forEach(({ text, id }) => {
                 const heading = Array.from(article.querySelectorAll('h2, h3'))
                     .find(el => el.textContent.trim() === text);
@@ -38,26 +41,52 @@ export default function TableOfContents({ content }) {
                     heading.id = id;
                 }
             });
-        }
 
-        // Intersection Observer for active heading
-        const observer = new IntersectionObserver(
-            (entries) => {
-                entries.forEach((entry) => {
-                    if (entry.isIntersecting) {
-                        setActiveId(entry.target.id);
-                    }
-                });
-            },
-            { rootMargin: '-20% 0px -80% 0px' }
-        );
+            // Intersection Observer for active heading
+            const observer = new IntersectionObserver(
+                (entries) => {
+                    entries.forEach((entry) => {
+                        if (entry.isIntersecting) {
+                            setActiveId(entry.target.id);
+                        }
+                    });
+                },
+                {
+                    rootMargin: '-20% 0px -80% 0px',
+                    threshold: 0.5
+                }
+            );
 
-        // Observe all headings
-        document.querySelectorAll('h2, h3').forEach((heading) => {
-            observer.observe(heading);
+            // Observe all headings
+            document.querySelectorAll('h2, h3').forEach((heading) => {
+                if (heading.id) {
+                    observer.observe(heading);
+                }
+            });
+
+            return () => observer.disconnect();
+        };
+
+        // Initial setup
+        const initialSetupTimeout = setTimeout(setupObservers, 100);
+
+        // Set up a mutation observer to watch for content changes
+        const contentObserver = new MutationObserver((mutations) => {
+            setupObservers();
         });
 
-        return () => observer.disconnect();
+        const article = document.querySelector('article');
+        if (article) {
+            contentObserver.observe(article, {
+                childList: true,
+                subtree: true
+            });
+        }
+
+        return () => {
+            clearTimeout(initialSetupTimeout);
+            contentObserver.disconnect();
+        };
     }, [content]);
 
     const scrollToHeading = (id) => {
