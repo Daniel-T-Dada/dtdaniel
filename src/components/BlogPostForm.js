@@ -12,6 +12,8 @@ import MediaSelector from './MediaSelector';
 import { embedPlugin } from '@/utils/tinyMceEmbedPlugin';
 import { playgroundPlugin } from '@/utils/tinyMcePlaygroundPlugin';
 import { galleryPlugin } from '@/utils/tinyMceGalleryPlugin';
+import { chartPlugin } from '@/utils/tinyMceChartPlugin';
+import { mermaidPlugin } from '@/utils/tinyMceMermaidPlugin';
 import ReactDOM from 'react-dom/client';
 
 // Import TinyMCE with dynamic import to avoid SSR issues
@@ -98,7 +100,7 @@ export default function BlogPostForm({ post = null }) {
         toolbar: 'undo redo | blocks | ' +
             'bold italic forecolor | alignleft aligncenter ' +
             'alignright alignjustify | bullist numlist outdent indent | ' +
-            'removeformat | link embed playground gallery | help',
+            'removeformat | link embed playground gallery chart mermaid | help',
         content_style: `
             body {
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
@@ -135,6 +137,8 @@ export default function BlogPostForm({ post = null }) {
             playgroundPlugin(editor);
             galleryPlugin(editor);
             embedPlugin(editor);
+            chartPlugin(editor);
+            mermaidPlugin(editor);
         },
         mediaSelector: {
             render: (container, options) => {

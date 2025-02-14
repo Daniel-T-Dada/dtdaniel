@@ -5,6 +5,8 @@ import dynamic from 'next/dynamic';
 import { processCodeBlocks } from '@/utils/processCodeBlocks';
 import { parseEmbed } from '@/utils/embedParser';
 import { parseCodePlayground } from '@/utils/parseCodePlayground';
+import { parseCharts } from '@/utils/parseCharts';
+import { parseMermaid } from '@/utils/parseMermaid';
 import EmbedRenderer from './embeds/EmbedRenderer';
 
 // Dynamically import CodePlayground to avoid SSR issues with Monaco Editor
@@ -15,6 +17,16 @@ const CodePlayground = dynamic(() => import('./CodePlayground'), {
 
 const ImageGallery = dynamic(() => import('./ImageGallery'), {
     loading: () => <div className="animate-pulse bg-gray-200 dark:bg-gray-700 rounded-lg h-64"></div>
+});
+
+const ChartComponent = dynamic(() => import('./charts/ChartComponent'), {
+    loading: () => <div className="animate-pulse bg-gray-200 dark:bg-gray-700 rounded-lg h-96"></div>,
+    ssr: false
+});
+
+const MermaidDiagram = dynamic(() => import('./diagrams/MermaidDiagram'), {
+    loading: () => <div className="animate-pulse bg-gray-200 dark:bg-gray-700 rounded-lg h-96"></div>,
+    ssr: false
 });
 
 export default function BlogContent({ content }) {
@@ -67,13 +79,17 @@ export default function BlogContent({ content }) {
                         fragments.push({ type: 'text', content: afterText });
                     }
                 } else {
-                    // Process embeds and playgrounds in the text
+                    // Process embeds, playgrounds, charts, and diagrams in the text
                     const embeds = parseEmbed(fragment.content);
                     const playgrounds = parseCodePlayground(fragment.content);
+                    const charts = parseCharts(fragment.content);
+                    const diagrams = parseMermaid(fragment.content);
 
-                    if (embeds.length > 1 || playgrounds.length > 1) {
+                    if (embeds.length > 1 || playgrounds.length > 1 || charts.length > 1 || diagrams.length > 1) {
                         embeds.forEach(embed => fragments.push(embed));
                         playgrounds.forEach(playground => fragments.push(playground));
+                        charts.forEach(chart => fragments.push(chart));
+                        diagrams.forEach(diagram => fragments.push(diagram));
                     } else {
                         fragments.push(fragment);
                     }
@@ -99,7 +115,7 @@ export default function BlogContent({ content }) {
                             </pre>
                         );
                     case 'embed':
-                        return <div key={index} dangerouslySetInnerHTML={{ __html: fragment.embedHtml }} />;
+                        return <EmbedRenderer key={index} url={fragment.url} />;
                     case 'playground':
                         return (
                             <CodePlayground
@@ -112,6 +128,17 @@ export default function BlogContent({ content }) {
                         );
                     case 'gallery':
                         return <ImageGallery key={index} images={fragment.images} />;
+                    case 'chart':
+                        return (
+                            <ChartComponent
+                                key={index}
+                                type={fragment.chartType}
+                                data={fragment.data}
+                                options={fragment.options}
+                            />
+                        );
+                    case 'diagram':
+                        return <MermaidDiagram key={index} definition={fragment.definition} />;
                     default:
                         return null;
                 }
