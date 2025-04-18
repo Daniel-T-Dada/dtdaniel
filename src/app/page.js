@@ -194,7 +194,7 @@ export default function Home() {
                 <p>
                   Since 2020, I&apos;ve been crafting user-centric web
                   experiences and designing innovative products. As the Head of
-                  Games/Instructor at Cente4Tech since 2021, I combine my
+                  Games/Instructor at Center4Tech since 2021, I combine my
                   development skills with my teaching passion to nurture the
                   next generation of tech talent.
                 </p>
