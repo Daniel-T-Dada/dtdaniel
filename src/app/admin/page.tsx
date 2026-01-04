@@ -1,15 +1,14 @@
 "use client";
 
-import { useState, useEffect, useCallback, memo } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
     getAuth,
     signInWithPopup,
     GoogleAuthProvider,
     onAuthStateChanged,
-    sendPasswordResetEmail,
     User
 } from "firebase/auth";
-import { getFirestore, collection, query, orderBy, getDocs, onSnapshot, DocumentData, Timestamp } from "firebase/firestore";
+import { getFirestore, collection, query, orderBy, getDocs, onSnapshot, Timestamp } from "firebase/firestore";
 import { app } from "@/firebase/config";
 import { useRouter } from "next/navigation";
 import { updateMessageStatus, Message } from "@/lib/firebaseHelpers";
@@ -49,10 +48,7 @@ export default function AdminPanel() {
     const [loading, setLoading] = useState(true);
     const [messages, setMessages] = useState<AdminMessage[]>([]);
     const [unreadCount, setUnreadCount] = useState(0);
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const [lockoutUntil, setLockoutUntil] = useState<number | null>(null);
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const [isResettingPassword, setIsResettingPassword] = useState(false);
+    const [, setLockoutUntil] = useState<number | null>(null);
     const [selectedMessage, setSelectedMessage] = useState<AdminMessage | null>(null);
     const router = useRouter();
 
@@ -140,23 +136,6 @@ export default function AdminPanel() {
         } catch (error) {
             console.error("Login error:", error);
             notify.error("Login failed");
-        }
-    };
-
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const handleResetPassword = async () => {
-        try {
-            setIsResettingPassword(true);
-            const email = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
-            if (email) {
-                await sendPasswordResetEmail(getAuth(app), email);
-                notify.success("Password reset email sent!");
-            }
-        } catch (error) {
-            console.error("Reset password error:", error);
-            notify.error("Failed to send reset email");
-        } finally {
-            setIsResettingPassword(false);
         }
     };
 

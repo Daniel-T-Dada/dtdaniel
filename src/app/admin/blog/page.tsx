@@ -13,7 +13,6 @@ async function getBlogPosts(): Promise<BlogPost[]> {
     const q = query(blogRef, orderBy('createdAt', 'desc'));
     const querySnapshot = await getDocs(q);
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     return querySnapshot.docs.map(doc => {
         const data = doc.data();
         // Convert Firestore timestamps to ISO strings and ensure full type compatibility

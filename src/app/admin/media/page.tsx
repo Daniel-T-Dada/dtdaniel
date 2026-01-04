@@ -51,7 +51,6 @@ export default function MediaManagement() {
         return () => unsubscribe();
     }, [router]);
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const handleMediaSelect = (media: MediaItemType | MediaItemType[]) => {
         // Handle media selection if needed
         console.log('Selected media:', media);

@@ -19,35 +19,7 @@ export default function ImageUpload({ onImageUploaded, currentImageUrl = null }:
     const [isUploading, setIsUploading] = useState(false);
     const [previewUrl, setPreviewUrl] = useState<string | null>(currentImageUrl);
 
-    const handleDrag = useCallback((e: DragEvent<HTMLDivElement>) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (e.type === "dragenter" || e.type === "dragover") {
-            setIsDragging(true);
-        } else if (e.type === "dragleave") {
-            setIsDragging(false);
-        }
-    }, []);
-
-    const handleDrop = useCallback((e: DragEvent<HTMLDivElement>) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setIsDragging(false);
-
-        const files = e.dataTransfer.files;
-        if (files && files[0]) {
-            handleFile(files[0]);
-        }
-    }, []);
-
-    const handleFileInput = (e: ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            handleFile(file);
-        }
-    };
-
-    const handleFile = async (file: File) => {
+    const handleFile = useCallback(async (file: File) => {
         // Validate file type (accept any image format)
         if (!file.type.startsWith('image/')) {
             notify.error("Please upload an image file");
@@ -121,6 +93,34 @@ export default function ImageUpload({ onImageUploaded, currentImageUrl = null }:
             console.error("File handling error:", error);
             notify.error("Failed to process image");
             setIsUploading(false);
+        }
+    }, [onImageUploaded]);
+
+    const handleDrag = useCallback((e: DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.type === "dragenter" || e.type === "dragover") {
+            setIsDragging(true);
+        } else if (e.type === "dragleave") {
+            setIsDragging(false);
+        }
+    }, []);
+
+    const handleDrop = useCallback((e: DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragging(false);
+
+        const files = e.dataTransfer.files;
+        if (files && files[0]) {
+            handleFile(files[0]);
+        }
+    }, [handleFile]);
+
+    const handleFileInput = (e: ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            handleFile(file);
         }
     };
 

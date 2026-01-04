@@ -29,21 +29,7 @@ export default function MediaLibrary({ onSelect, multiple = false, initialSelect
     const [filters, setFilters] = useState<FilterState>({ type: '', tags: [] });
     const [availableTags, setAvailableTags] = useState<string[]>([]);
 
-    useEffect(() => {
-        loadMediaLibrary();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [filters]);
-
-    // Extract unique tags from media items
-    useEffect(() => {
-        const tags = new Set<string>();
-        mediaItems.forEach(item => {
-            item.tags?.forEach(tag => tags.add(tag));
-        });
-        setAvailableTags(Array.from(tags));
-    }, [mediaItems]);
-
-    async function loadMediaLibrary() {
+    const loadMediaLibrary = useCallback(async () => {
         try {
             setLoading(true);
             const items = await getMediaLibrary(filters);
@@ -54,7 +40,20 @@ export default function MediaLibrary({ onSelect, multiple = false, initialSelect
         } finally {
             setLoading(false);
         }
-    }
+    }, [filters]);
+
+    useEffect(() => {
+        void loadMediaLibrary();
+    }, [loadMediaLibrary]);
+
+    // Extract unique tags from media items
+    useEffect(() => {
+        const tags = new Set<string>();
+        mediaItems.forEach(item => {
+            item.tags?.forEach(tag => tags.add(tag));
+        });
+        setAvailableTags(Array.from(tags));
+    }, [mediaItems]);
 
     const handleFileUpload = async (event: ChangeEvent<HTMLInputElement>) => {
         const files = event.target.files ? Array.from(event.target.files) : [];
@@ -91,7 +90,7 @@ export default function MediaLibrary({ onSelect, multiple = false, initialSelect
 
     const handleSearch = useCallback(async () => {
         if (!searchTerm.trim()) {
-            loadMediaLibrary();
+            await loadMediaLibrary();
             return;
         }
 
@@ -105,7 +104,7 @@ export default function MediaLibrary({ onSelect, multiple = false, initialSelect
         } finally {
             setLoading(false);
         }
-    }, [searchTerm]);
+    }, [loadMediaLibrary, searchTerm]);
 
     const handleSelect = useCallback((item: MediaItemType) => {
         if (!multiple) {

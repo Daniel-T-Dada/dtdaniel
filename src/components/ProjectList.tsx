@@ -21,8 +21,6 @@ export default function ProjectList({ onEdit }: ProjectListProps) {
     const [projects, setProjects] = useState<ProjectWithId[]>([]);
     const [loading, setLoading] = useState(true);
     const [reordering, setReordering] = useState(false);
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
 
     useEffect(() => {
         // Set up real-time listener

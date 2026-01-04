@@ -16,21 +16,14 @@ const navigation = [
     { name: "Media Library", href: "/admin/media" },
 ];
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
-    const pathname = usePathname();
-    const [sidebarOpen, setSidebarOpen] = useState(false);
-    const router = useRouter();
-
-    const handleSignOut = async () => {
-        try {
-            await signOut(auth);
-            router.push("/");
-        } catch (error) {
-            console.error("Error signing out:", error);
-        }
-    };
-
-    const SidebarContent = () => (
+function SidebarContent({
+    pathname,
+    onSignOut,
+}: {
+    pathname: string;
+    onSignOut: () => void | Promise<void>;
+}) {
+    return (
         <>
             <div className="flex-1">
                 <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-6">Admin Panel</h2>
@@ -60,7 +53,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     <ThemeToggle />
                 </div>
                 <button
-                    onClick={handleSignOut}
+                    onClick={onSignOut}
                     className="w-full flex items-center px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
                 >
                     <ArrowRightOnRectangleIcon className="h-5 w-5 mr-2" />
@@ -69,6 +62,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </div>
         </>
     );
+}
+
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
+    const pathname = usePathname();
+    const [sidebarOpen, setSidebarOpen] = useState(false);
+    const router = useRouter();
+
+    const handleSignOut = async () => {
+        try {
+            await signOut(auth);
+            router.push("/");
+        } catch (error) {
+            console.error("Error signing out:", error);
+        }
+    };
 
     return (
         <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
@@ -97,7 +105,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             {/* Sidebar for desktop */}
             <div className="hidden lg:block fixed top-0 left-0 h-screen w-64 overflow-y-auto bg-white dark:bg-gray-800 shadow-lg">
                 <div className="p-4 h-full flex flex-col">
-                    <SidebarContent />
+                    <SidebarContent pathname={pathname} onSignOut={handleSignOut} />
                 </div>
             </div>
 
@@ -111,7 +119,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 `}
             >
                 <div className="flex flex-col h-full p-4 pt-16">
-                    <SidebarContent />
+                    <SidebarContent pathname={pathname} onSignOut={handleSignOut} />
                 </div>
             </div>
 

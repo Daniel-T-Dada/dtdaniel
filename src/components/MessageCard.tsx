@@ -15,7 +15,6 @@ interface AdminMessage extends Omit<Message, 'timestamp'> {
 
 interface MessageCardProps {
     message: AdminMessage;
-    // eslint-disable-next-line no-unused-vars
     onMarkAsRead: (id: string) => void;
 }
 
