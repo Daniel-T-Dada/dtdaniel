@@ -1,0 +1,6 @@
+onlyBuiltDependencies:
+  - '@firebase/util'
+  - canvas
+  - protobufjs
+  - sharp
+  - unrs-resolver
