@@ -7,6 +7,17 @@ export async function POST(request: Request) {
         const data = await request.json();
         const { name, email, subject, message } = data;
 
+        if (!name || !email || !subject || !message ||
+            typeof name !== 'string' || typeof email !== 'string' ||
+            typeof subject !== 'string' || typeof message !== 'string') {
+            return NextResponse.json({ error: 'Missing or invalid fields' }, { status: 400 });
+        }
+
+        if (!process.env.EMAIL_APP_PASSWORD) {
+            console.error('EMAIL_APP_PASSWORD environment variable is not set');
+            return NextResponse.json({ error: 'Email service not configured' }, { status: 500 });
+        }
+
         // Create transporter
         const transporter = nodemailer.createTransport({
             service: "gmail",

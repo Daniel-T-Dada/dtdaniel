@@ -64,9 +64,9 @@ export default function AnimatedLink({
         );
     }
 
-    // Cast motion components to handle custom props correctly with Framer Motion types
-    // Explicitly typing as 'any' to bypass partial type mismatch with Next.js Link generic constraints
-    const MotionLink = motion(Link) as any;
+    // motion(Link) produces a type incompatible with Next.js Link's generic constraints;
+    // casting via unknown is the only safe workaround without patching upstream types.
+    const MotionLink = motion(Link) as unknown as React.ComponentType<React.ComponentProps<typeof Link> & { whileHover?: object; whileTap?: object; transition?: object }>;
     const MotionA = motion.a;
 
     if (external) {
@@ -103,31 +103,10 @@ export function AnimatedButton({
         setMounted(true);
     }, []);
 
-    // Filter motion props for fallback
-    const {
-        variants: _v,
-        transition: _t,
-        initial: _i,
-        animate: _a,
-        whileHover: _wh,
-        whileTap: _wt,
-        onAnimationStart: _oas,
-        onDrag: _od,
-        onDragStart: _ods,
-        onDragEnd: _ode,
-        onLayoutAnimationStart: _olas,
-        onLayoutAnimationComplete: _olac,
-        ...domProps
-    } = props as any;
-
+    // During SSR fallback render, only pass safe native props
     if (!mounted) {
         return (
-            <button
-                onClick={onClick as any}
-                className={className}
-                disabled={disabled}
-                {...domProps}
-            >
+            <button onClick={onClick} className={className} disabled={disabled}>
                 {children}
             </button>
         );

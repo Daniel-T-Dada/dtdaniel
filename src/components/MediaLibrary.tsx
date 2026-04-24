@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback, ChangeEvent } from 'react';
 import { AnimatePresence } from 'framer-motion';
-// @ts-ignore
 import { uploadMedia, getMediaLibrary, deleteMedia, updateMediaMetadata, searchMedia } from '@/utils/mediaManager';
 import { toast } from 'react-hot-toast';
 import MediaItem, { MediaItemType } from './MediaItem';
@@ -33,7 +32,7 @@ export default function MediaLibrary({ onSelect, multiple = false, initialSelect
         try {
             setLoading(true);
             const items = await getMediaLibrary(filters);
-            setMediaItems(items as unknown as MediaItemType[]);
+            setMediaItems(items as MediaItemType[]);
         } catch (error) {
             console.error('Error loading media library:', error);
             toast.error('Failed to load media library');
@@ -64,7 +63,7 @@ export default function MediaLibrary({ onSelect, multiple = false, initialSelect
             const uploadPromises = files.map(file => uploadMedia(file));
             const results = await Promise.all(uploadPromises);
 
-            setMediaItems(prev => [...(results as unknown as MediaItemType[]), ...prev]);
+            setMediaItems(prev => [...(results as MediaItemType[]), ...prev]);
             toast.success(`Successfully uploaded ${files.length} file(s)`);
         } catch (error) {
             console.error('Error uploading files:', error);
@@ -97,7 +96,7 @@ export default function MediaLibrary({ onSelect, multiple = false, initialSelect
         try {
             setLoading(true);
             const results = await searchMedia(searchTerm);
-            setMediaItems(results as unknown as MediaItemType[]);
+            setMediaItems(results as MediaItemType[]);
         } catch (error) {
             console.error('Error searching media:', error);
             toast.error('Failed to search media');

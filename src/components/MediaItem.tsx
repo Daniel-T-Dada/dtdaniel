@@ -4,13 +4,17 @@ import { motion } from 'framer-motion';
 
 export interface MediaItemType {
     id: string;
-    thumbnailUrl: string;
+    thumbnailUrl?: string;
     url?: string;
     caption?: string;
+    altText?: string;
     fileName?: string;
     originalName?: string;
+    type?: string;
     tags?: string[];
-    [key: string]: any;
+    uploadedAt?: string | null;
+    updatedAt?: string | null;
+    [key: string]: unknown;
 }
 
 interface MediaItemProps {
@@ -34,7 +38,7 @@ function MediaItem({ item, onSelect, onEdit, onDelete, isSelected, index }: Medi
             <div className="aspect-square relative rounded-lg border border-gray-200 dark:border-gray-700 group">
                 <div className="absolute inset-0 rounded-lg overflow-hidden">
                     <Image
-                        src={item.thumbnailUrl}
+                        src={item.thumbnailUrl || item.url || ''}
                         alt={item.caption || item.fileName || "Media item"}
                         fill
                         sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"

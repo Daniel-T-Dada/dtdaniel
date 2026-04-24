@@ -68,24 +68,10 @@ export default function AnimatedElement({
         setIsMounted(true);
     }, []);
 
-    // Filter motion props for fallback
-    const {
-        variants: _v,
-        transition: _t,
-        initial: _i,
-        animate: _a,
-        ...domProps
-    } = props as any;
-
-    // During SSR and initial client render, return a div with no animations
+    // During SSR and initial client render, return a plain div — motion props must not be passed
     if (!isMounted) {
         return (
-            <div
-                className={className}
-                style={style}
-                suppressHydrationWarning
-                {...domProps}
-            >
+            <div className={className} style={style} suppressHydrationWarning>
                 {children}
             </div>
         );
@@ -100,7 +86,7 @@ export default function AnimatedElement({
             {...hoverConfig}
             transition={{ duration, delay }}
             className={className}
-            style={style as any}
+            style={style}
             suppressHydrationWarning
             {...props}
         >

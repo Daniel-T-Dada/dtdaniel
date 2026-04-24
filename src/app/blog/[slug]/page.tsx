@@ -11,6 +11,11 @@ import { generateBlogPostSchema, generateBreadcrumbSchema, generatePersonSchema 
 import BlogContent from '@/components/BlogContent';
 import type { BlogPost } from '../../../types/blog';
 import { Metadata } from 'next';
+import { Timestamp } from 'firebase/firestore';
+
+function tsToString(val: Timestamp | string): string {
+    return typeof val === 'string' ? val : val.toDate().toISOString();
+}
 
 export const revalidate = 3600; // Revalidate every hour
 
@@ -40,8 +45,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata 
             description: post.excerpt || post.content.substring(0, 200),
             url: `${process.env.NEXT_PUBLIC_BASE_URL}/blog/${post.slug}`,
             author: generatePersonSchema(),
-            datePublished: post.createdAt,
-            dateModified: post.updatedAt,
+            datePublished: tsToString(post.createdAt),
+            dateModified: tsToString(post.updatedAt),
             image: post.coverImage || `${process.env.NEXT_PUBLIC_BASE_URL}/images/og-blog.png`,
             isPartOf: {
                 '@type': 'Blog',
@@ -69,8 +74,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata 
             ],
             locale: 'en_US',
             type: 'article',
-            publishedTime: post.createdAt,
-            modifiedTime: post.updatedAt,
+            publishedTime: tsToString(post.createdAt),
+            modifiedTime: tsToString(post.updatedAt),
             authors: ['Daniel Dada'],
             tags: post.tags || [],
         },
@@ -106,21 +111,12 @@ export async function generateStaticParams() {
     }
 }
 
-async function getAdjacentPosts(currentSlug: string, createdAt: any): Promise<{ previousPost: any, nextPost: any }> {
+async function getAdjacentPosts(currentSlug: string, createdAt: string): Promise<{ previousPost: { slug: string; title: string } | null, nextPost: { slug: string; title: string } | null }> {
     try {
         const blogRef = collection(db, 'blog-posts');
 
-        // Get previous post (only published posts)
-        const prevQuery = query(
-            blogRef,
-            where('published', '==', true),
-            where('createdAt', '>', createdAt),
-            orderBy('createdAt'),
-            limit(1)
-        );
-
-        // Get next post (only published posts)
-        const nextQuery = query(
+        // Previous post = older post (published before this one)
+        const olderQuery = query(
             blogRef,
             where('published', '==', true),
             where('createdAt', '<', createdAt),
@@ -128,20 +124,29 @@ async function getAdjacentPosts(currentSlug: string, createdAt: any): Promise<{ 
             limit(1)
         );
 
+        // Next post = newer post (published after this one)
+        const newerQuery = query(
+            blogRef,
+            where('published', '==', true),
+            where('createdAt', '>', createdAt),
+            orderBy('createdAt', 'asc'),
+            limit(1)
+        );
+
         try {
-            const [prevSnapshot, nextSnapshot] = await Promise.all([
-                getDocs(prevQuery),
-                getDocs(nextQuery)
+            const [olderSnapshot, newerSnapshot] = await Promise.all([
+                getDocs(olderQuery),
+                getDocs(newerQuery)
             ]);
 
             return {
-                previousPost: prevSnapshot.empty ? null : {
-                    slug: prevSnapshot.docs[0].data().slug,
-                    title: prevSnapshot.docs[0].data().title
+                previousPost: olderSnapshot.empty ? null : {
+                    slug: olderSnapshot.docs[0].data().slug,
+                    title: olderSnapshot.docs[0].data().title
                 },
-                nextPost: nextSnapshot.empty ? null : {
-                    slug: nextSnapshot.docs[0].data().slug,
-                    title: nextSnapshot.docs[0].data().title
+                nextPost: newerSnapshot.empty ? null : {
+                    slug: newerSnapshot.docs[0].data().slug,
+                    title: newerSnapshot.docs[0].data().title
                 }
             };
         } catch (queryError: any) {
@@ -203,7 +208,7 @@ async function BlogPostContent({ slug }: { slug: string }) {
         notFound();
     }
 
-    const { previousPost, nextPost } = post.published ? await getAdjacentPosts(slug, post.createdAt) : { previousPost: null, nextPost: null };
+    const { previousPost, nextPost } = post.published ? await getAdjacentPosts(slug, tsToString(post.createdAt)) : { previousPost: null, nextPost: null };
 
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
     const postUrl = `${baseUrl}/blog/${post.slug}`;
@@ -266,8 +271,8 @@ async function BlogPostContent({ slug }: { slug: string }) {
                 </h1>
 
                 <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-8">
-                    <time dateTime={post.createdAt}>
-                        {new Date(post.createdAt).toLocaleDateString('en-US', {
+                    <time dateTime={tsToString(post.createdAt)}>
+                        {new Date(tsToString(post.createdAt)).toLocaleDateString('en-US', {
                             year: 'numeric',
                             month: 'long',
                             day: 'numeric'

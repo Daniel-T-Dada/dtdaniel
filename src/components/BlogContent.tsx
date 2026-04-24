@@ -2,15 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
-// @ts-ignore
 import { processCodeBlocks } from '@/utils/processCodeBlocks';
-// @ts-ignore
 import { parseEmbed } from '@/utils/embedParser';
-// @ts-ignore
 import { parseCodePlayground } from '@/utils/parseCodePlayground';
-// @ts-ignore
 import { parseCharts } from '@/utils/parseCharts';
-// @ts-ignore
 import { parseMermaid } from '@/utils/parseMermaid';
 import EmbedRenderer from './embeds/EmbedRenderer';
 
@@ -56,8 +51,8 @@ export default function BlogContent({ content }: BlogContentProps) {
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = content;
 
-        // Process code blocks first
-        const codeBlocksProcessed: ContentFragment[] = processCodeBlocks(tempDiv.innerHTML) as ContentFragment[];
+        // processCodeBlocks returns text/code fragments; ContentFragment is a superset
+        const codeBlocksProcessed = processCodeBlocks(tempDiv.innerHTML) as unknown as ContentFragment[];
 
         // Process embeds and playgrounds
         const fragments: ContentFragment[] = [];
@@ -72,8 +67,8 @@ export default function BlogContent({ content }: BlogContentProps) {
                 if (galleryElements.length > 0) {
                     // Process text before first gallery
                     let lastIndex = 0;
-                    // @ts-ignore
-                    galleryElements.forEach((galleryElement: HTMLElement) => {
+                    Array.from(galleryElements).forEach((el) => {
+                        const galleryElement = el as HTMLElement;
                         // Add text before gallery
                         const beforeText = fragment.content.substring(lastIndex, fragment.content.indexOf(galleryElement.outerHTML, lastIndex));
                         if (beforeText.trim()) {

@@ -4,28 +4,24 @@ import React from 'react';
 import dynamic from 'next/dynamic';
 import ReactDOM from 'react-dom/client';
 import MediaSelector from '@/components/MediaSelector';
-// @ts-ignore
 import { embedPlugin } from '@/utils/tinyMceEmbedPlugin';
-// @ts-ignore
 import { playgroundPlugin } from '@/utils/tinyMcePlaygroundPlugin';
-// @ts-ignore
 import { galleryPlugin } from '@/utils/tinyMceGalleryPlugin';
-// @ts-ignore
 import { chartPlugin } from '@/utils/tinyMceChartPlugin';
-// @ts-ignore
 import { mermaidPlugin } from '@/utils/tinyMceMermaidPlugin';
-import { Editor as TinyMCEEditor } from '@tinymce/tinymce-react';
 
 const Editor = dynamic(() => import('@tinymce/tinymce-react').then(mod => mod.Editor), {
     ssr: false,
     loading: () => <div className="h-96 w-full bg-gray-100 dark:bg-gray-800 rounded-md animate-pulse" />
 });
 
+import type { MediaItemType } from '@/components/MediaItem';
+
 interface BlogEditorProps {
     content: string;
     setContent: (content: string) => void;
-    onMediaSelect: (media: any) => void;
-    selectedMedia: any[];
+    onMediaSelect: (media: MediaItemType | MediaItemType[]) => void;
+    selectedMedia: MediaItemType[];
 }
 
 export default function BlogEditor({
@@ -78,7 +74,8 @@ export default function BlogEditor({
                 color: #666;
             }
         `,
-        setup: (editor: any) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        setup: (editor: Record<string, any>) => {
             playgroundPlugin(editor);
             galleryPlugin(editor);
             embedPlugin(editor);
@@ -86,7 +83,7 @@ export default function BlogEditor({
             mermaidPlugin(editor);
         },
         mediaSelector: {
-            render: (container: HTMLElement, options: any) => {
+            render: (container: HTMLElement, options: { onSelect: (media: MediaItemType | MediaItemType[]) => void; multiple: boolean }) => {
                 const root = ReactDOM.createRoot(container);
                 root.render(
                     <MediaSelector

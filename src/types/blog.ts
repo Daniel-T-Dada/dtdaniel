@@ -14,9 +14,9 @@ export interface BlogPost {
         name: string;
         avatar?: string;
     };
-    createdAt: any; // Can be Timestamp or serialized string/Date
-    updatedAt: any; // Can be Timestamp or serialized string/Date
-    scheduledFor?: any;
+    createdAt: Timestamp | string;
+    updatedAt: Timestamp | string;
+    scheduledFor?: Timestamp | string | null;
     media?: Array<{
         url: string;
         type: string;
