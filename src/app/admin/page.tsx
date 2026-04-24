@@ -48,7 +48,6 @@ export default function AdminPanel() {
     const [loading, setLoading] = useState(true);
     const [messages, setMessages] = useState<AdminMessage[]>([]);
     const [unreadCount, setUnreadCount] = useState(0);
-    const [, setLockoutUntil] = useState<number | null>(null);
     const [selectedMessage, setSelectedMessage] = useState<AdminMessage | null>(null);
     const router = useRouter();
 
@@ -78,9 +77,7 @@ export default function AdminPanel() {
         const storedLockout = localStorage.getItem("loginLockout");
         if (storedLockout) {
             const lockoutTime = parseInt(storedLockout);
-            if (lockoutTime > Date.now()) {
-                setLockoutUntil(lockoutTime);
-            } else {
+            if (lockoutTime <= Date.now()) {
                 localStorage.removeItem("loginLockout");
             }
         }

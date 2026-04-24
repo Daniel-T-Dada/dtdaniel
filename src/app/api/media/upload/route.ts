@@ -14,6 +14,10 @@ export async function POST(request: Request) {
 
         const token = authHeader.split('Bearer ')[1];
         try {
+            if (!process.env.ADMIN_EMAIL) {
+                console.error('ADMIN_EMAIL environment variable is not set');
+                return NextResponse.json({ error: 'Server misconfiguration' }, { status: 500 });
+            }
             const decodedToken = await getAuth().verifyIdToken(token);
             if (decodedToken.email !== process.env.ADMIN_EMAIL) {
                 return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

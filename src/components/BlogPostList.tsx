@@ -9,6 +9,11 @@ import { toast } from 'react-hot-toast';
 import { cancelScheduledPost } from '@/utils/scheduleManager';
 
 import type { BlogPost } from '../types/blog';
+import { Timestamp } from 'firebase/firestore';
+
+function tsToDate(val: Timestamp | string): Date {
+    return typeof val === 'string' ? new Date(val) : val.toDate();
+}
 
 interface BlogPostListProps {
     initialPosts: BlogPost[];
@@ -114,7 +119,7 @@ export default function BlogPostList({ initialPosts }: BlogPostListProps) {
 
     const getStatusBadge = (post: BlogPost) => {
         if (post.status === 'scheduled') {
-            const scheduledDate = post.scheduledFor?.toDate?.() || (post.scheduledFor ? new Date(post.scheduledFor) : new Date());
+            const scheduledDate = post.scheduledFor ? tsToDate(post.scheduledFor) : new Date();
             return (
                 <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200">
                     Scheduled for {scheduledDate.toLocaleString()}
@@ -206,7 +211,7 @@ export default function BlogPostList({ initialPosts }: BlogPostListProps) {
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                     {/* Handle potentially different date formats */}
-                                    {post.createdAt?.toDate?.()?.toLocaleDateString() || new Date(post.createdAt).toLocaleDateString()}
+                                    {tsToDate(post.createdAt).toLocaleDateString()}
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap">
                                     {getStatusBadge(post)}
@@ -276,7 +281,7 @@ export default function BlogPostList({ initialPosts }: BlogPostListProps) {
                                 </div>
                                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                                     {/* Handle potentially different date formats */}
-                                    {post.createdAt?.toDate?.()?.toLocaleDateString() || new Date(post.createdAt).toLocaleDateString()}
+                                    {tsToDate(post.createdAt).toLocaleDateString()}
                                 </p>
                             </div>
                         </div>
